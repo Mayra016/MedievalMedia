@@ -1,0 +1,19 @@
+FRONTEND
+	For you
+	    Input container
+	        Input
+	        Button
+	        
+	        Function: insert data in topic
+	    Topic container
+	        Function: display topic data in text
+	    Menu
+	    	
+        
+BACKEND
+    KafkaRestAPI
+        /api/v1/insert-data
+            Function: Producer sends data to Kafka server
+        /api/v1/get-data
+            Function: App (consumer) receives data from kafka server and sends it to user
+        
