@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/styles/index.css" rel="stylesheet">
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="#{HOME-TITLE}">Home</title>
+    <link rel="icon" type="image/png" href="assets/favicon.jpg">
+</head>
+
+<header>  
+	<div class="logo">
+  		<h3>⚔️</h3><h1>  MedievalMedia  </h1><h3>🏰</h3>
+  	</div>
+</header>
+
+<main>
+  <div class="create-post">
+    <h3 class="center">What is up in your reign?<h3>
+    <div id="create-letter-div" class="center input-div column card">
+      <input class="center letter greeting" type="text" placeholder="Greetings">
+      <textarea class="center letter" rows="20" cols="40" ></textarea>
+      <input class="center letter greeting" type="text" placeholder="Reign of">
+      <div class="center">
+        <button class="sendBtn" style="justify-content:center;">🕊️ Send</button>   
+      </div>
+    </div>
+  </div>
+      
+  
+    
+  <div class="center column card post">
+    <div class="creator">
+      <div class="profileImg">
+        <img src="https://img.icons8.com/?size=100&id=33901&format=png&color=000000">
+      </div>
+      <div class="nameTitle">
+        <h4>Name</h4>
+        <h6>Title</h6>
+      </div>
+    </div>
+      <p class="center letter" >Greeting</p>
+      <p class="center letter" >Content</p>
+      <p class="center letter reign" >Reign of</p>
+      <div class="postBtns">
+         <button>
+           <p>2</p><span class="sword">🗡️</span></button>
+         <button><p>2</p><span class="heart">❤️</span></button>
+         <button><p>2</p><span class="heart">🛡️</span></button>
+         <button><p>2</p><span class="heart">👑</span></button>
+         <button><span class="heart" style="display:flex; align-items:center;padding-top:20px;">🪙</span></button>
+         <button style="display:flex; align-items:center;padding-top:20px;"><span class="heart" >✨</span></button>
+         <button style="display:flex; align-items:center;padding-top:20px;" >
+		 <span class="heart answer">↩️</span></button>
+      </div>   
+    </div>
+<div class="audio-player"> 
+  <div class=" scrolling-text musicTitle">
+ 	  <span> 🎺 Epic medieval music</span>
+  </div>
+  <div class="playerBtns">
+	  <button>⏮️</button><button>▶️</button><button>⏭️</button>
+	  <div class="volume-container">
+		  <button class="volume">🔊</button>
+		  <input type="range" min="0" max="100" value="50" class="volume-slider">
+	  </div>
+
+  </div>
+</div>
+    
+    <div class="menu">
+     <select>
+        <option default>🛖</option>
+	    <option>📮</option>
+	    <option>🤺</option>
+      </select>
+     
+    </div>
+</main>
+<iframe style="opacity: 0;pointer-events: none;" width="560" height="315"
+  src="https://www.youtube.com/embed/videoseries?list=PLnuhlOfdJ2WKvIu8eaF3uel9p3VjuK10M&autoplay=1&mute=0&controls=0&loop=1"
+  title="YouTube video player" frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+</iframe>
+<script type="module" th:inline="javascript" defer>
+var csrfTokenElement = document.querySelector("meta[name='_csrf']");
+var csrfToken = csrfTokenElement ? csrfTokenElement.getAttribute("content") : null;
+var csrfHeaderElement = document.querySelector("meta[name='_csrf_header']");
+var csrfHeader = csrfHeaderElement ? csrfHeaderElement.getAttribute("content") : null;
+
+
+
+</script>
+</body>
+</html>
+
+
