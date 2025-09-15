@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+import com.MedievalMedia.Enums.Language;
+
 @Entity
 @Data
 @Table(name="posts")
@@ -29,13 +31,22 @@ public class Post {
 	private String content;
 	private String reign;
 	private LocalDate date;
+	private Language language;
 	@OneToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "interactions_id")
 	private Interactions interactions;
+	@ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Post parent;
 	
-	public Post(User creator, String greetings, String content, String reign) {
+	public Post(User creator, String greetings, String content, String reign, Language language) {
+		this.creator = creator;
+		this.greetings = greetings;
+		this.content = content;
+		this.reign = reign;
 		this.date = LocalDate.now();
 		this.interactions = new Interactions();
+		this.language = language;
 	}
 	
 }
