@@ -49,7 +49,7 @@ h3 {
   font-size: 25px;
 }
 
-p, span, body, .sendBtn, input, textarea {
+p, span, body, .sendBtn, input, textarea, select {
   font-family: 'Eagle Lake';
 }
 
@@ -116,7 +116,7 @@ button:hover {
 }
 
 input, textarea {
-   background-color: transparent;
+  background-color: transparent;
   border-radius: 5px;
   border-color: rgb(238, 211, 125, 0.5);
 }
