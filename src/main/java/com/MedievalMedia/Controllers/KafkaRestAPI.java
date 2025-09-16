@@ -43,18 +43,15 @@ import jakarta.annotation.security.PermitAll;
 public class KafkaRestAPI {
 	private PostService productService;
 	private UserRepository userRepository;
-	private PostRepository postRepository;
 	private KafkaService kafkaService;
 	private List<String> kafkaPosts = new ArrayList<>();
 	private Logger log = LoggerFactory.getLogger(KafkaRestAPI.class);
 	
     @Autowired
     public KafkaRestAPI(UserRepository userRepository,
-                        PostRepository postRepository,
                         PostService productService,
                         KafkaService kafkaService) {
         this.userRepository = userRepository;
-        this.postRepository = postRepository;
         this.productService = productService;
         this.kafkaService = kafkaService;
     }
@@ -66,25 +63,14 @@ public class KafkaRestAPI {
         this.kafkaPosts.add(message);
     }
     
-    @GetMapping("getTest")
-	public ResponseEntity<String> getTest() {
-		try {
-			return ResponseEntity.status(HttpStatus.OK).body(this.lastMessage);
-		} catch (Exception e) {
-			e.printStackTrace();
-			this.log.error("Error sending post");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iserting data");
-		}
-	}
-    
     @GetMapping("getPostFromKafka")
-	public ResponseEntity<String> getTestPost() {
+	public ResponseEntity<List<String>> getTestPost() {
 		try {
-			return ResponseEntity.status(HttpStatus.OK).body(this.lastMessage);
+			return ResponseEntity.status(HttpStatus.OK).body(this.kafkaPosts);
 		} catch (Exception e) {
 			e.printStackTrace();
-			this.log.error("Error sending post");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iserting data");
+			this.log.error("Error getting post from Kafka");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of("Error getting post from Kafka"));
 		}
 	}
     
@@ -109,55 +95,15 @@ public class KafkaRestAPI {
 					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
 				}
 			} catch(Exception e) {
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iserting data");
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sending post to Kafka");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.log.error("Error sending post");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iserting data");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error sending post to Kafka");
 		}
 	}
 	
 
-	@PostMapping("insert-data")
-	public ResponseEntity<String> insertData(@RequestBody PostDAO post) {
-		try {
-			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-			CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-			UUID userId = (UUID) userDetails.getId();
-			
-			try {
-				Optional<User> searchUser = userRepository.findById(userId);
-				
-				if (searchUser.isPresent()) {
-					User user = searchUser.get();
-					Post newPost = new Post(user, post.greetings(), post.content(), post.reign(), post.language());
-					this.postRepository.save(newPost);
-					
-					return ResponseEntity.status(HttpStatus.OK).body("Data was successful inserted");
-				} else {
-					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-				}
-			} catch(Exception e) {
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iserting data");
-			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			this.log.error("Error sending post");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iserting data");
-		}
-	}
-	
-	@GetMapping("/get-posts-data")
-	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId) {
-		try {
-			List<Post> userPosts = this.postRepository.findAllByUserId(userId);
-			return ResponseEntity.status(HttpStatus.OK).body(userPosts);
-		} catch (Exception e) {
-			e.printStackTrace();
-			this.log.error("Error getting posts data");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
-		}
-	}
+}
 }
