@@ -36,7 +36,7 @@ public class PostController {
 		this.postRepository = postRepository;
 	}
 
-	@PostMapping("create-post")
+	@PostMapping("/create-post")
 	public ResponseEntity<String> insertData(@RequestBody PostDAO post) {
 		try {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
