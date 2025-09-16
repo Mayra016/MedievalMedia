@@ -1,5 +1,9 @@
 package com.MedievalMedia.Services;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -32,6 +36,16 @@ public class JwtTokenService {
 	
 	public boolean isTokenExpired(String token) {
 		return extractExpiration(token).before(new Date(System.currentTimeMillis()));
+	}
+	
+	public boolean isTokenAboutToExpire(String token) {
+		Date expirationDate = extractExpiration(token);
+
+	    if (expirationDate.toInstant().isBefore(Instant.now().plus(Duration.ofDays(1)))) {
+	    	return false;
+	    }
+
+	    return true;
 	}
 	
 	private Date extractExpiration(String token) {

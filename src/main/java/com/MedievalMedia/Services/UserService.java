@@ -7,15 +7,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Enums.Language;
+import com.MedievalMedia.Records.UserDAO;
 import com.MedievalMedia.Repositories.UserRepository;
 
 @Service
@@ -23,11 +27,14 @@ public class UserService implements UserDetailsService {
 	private final UserRepository userRepository;
     private Logger log = LoggerFactory.getLogger(UserService.class);
     private JwtTokenService jwtTokenService;
+    private PasswordEncoder passwordEncoder;
     
     @Autowired
-	public UserService(UserRepository userRepository, JwtTokenService jwtTokenService) {
+	public UserService(UserRepository userRepository, JwtTokenService jwtTokenService,
+			PasswordEncoder passwordEncoder) {
 		this.userRepository = userRepository;
 		this.jwtTokenService = jwtTokenService;
+		this.passwordEncoder = passwordEncoder;
 	}
     
 	@Override
@@ -89,5 +96,30 @@ public class UserService implements UserDetailsService {
 		}
 		
 		return token;
+	}
+	
+	public ResponseEntity<String> authenticateUser(UserDAO credentials) {
+		try {
+			Optional<User> searchUser = this.userRepository.findByEmail(credentials.email());
+			
+			if (searchUser.isPresent()) {
+				User user = searchUser.get();
+				if (passwordEncoder.matches(credentials.password(), user.getPassword())) {
+					String token = JwtTokenService.generateToken(credentials.email());
+					return ResponseEntity.status(HttpStatus.OK).body(token);
+				} else {
+					return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Wrong credentials");
+				}
+			} else {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			this.log.error("Unknow error authenticating login");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error authenticating login");
+			
+		}
 	}
 }

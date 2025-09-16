@@ -1,5 +1,6 @@
 package com.MedievalMedia.Controllers;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.User;
+import com.MedievalMedia.Records.UserDAO;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.MedievalMedia.Services.JwtTokenService;
 import com.MedievalMedia.Services.UserService;
@@ -35,6 +37,11 @@ public class UserRestAPI {
 		this.userRepository = userRepository;
 		this.jwtTokenService = jwtTokenService;
 		this.userService = userService;
+	}
+	
+	@PostMapping("/login-authentication")
+	public ResponseEntity<String> authenticateUserFromLogin(@RequestBody UserDAO credentials) {
+		return this.userService.authenticateUser(credentials);
 	}
 	
 	@PostMapping("/auth")
