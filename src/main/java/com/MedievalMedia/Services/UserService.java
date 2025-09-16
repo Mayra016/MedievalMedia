@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,10 +22,12 @@ import com.MedievalMedia.Repositories.UserRepository;
 public class UserService implements UserDetailsService {
 	private final UserRepository userRepository;
     private Logger log = LoggerFactory.getLogger(UserService.class);
-
+    private JwtTokenService jwtTokenService;
+    
     @Autowired
-	public UserService(UserRepository userRepository) {
+	public UserService(UserRepository userRepository, JwtTokenService jwtTokenService) {
 		this.userRepository = userRepository;
+		this.jwtTokenService = jwtTokenService;
 	}
     
 	@Override
@@ -63,5 +67,27 @@ public class UserService implements UserDetailsService {
 		}
 		
 		return Language.ENGLISH;
+	}
+	
+	public String isUserAuthenticated(String token) {
+		
+		String email = this.jwtTokenService.extractEmail(token);
+		
+		if (this.jwtTokenService.validateToken(token)) {
+			// load user		
+			UserDetails userDetails = loadUserByUsername(email);
+			
+			UsernamePasswordAuthenticationToken authentication =
+	                new UsernamePasswordAuthenticationToken(
+	                    userDetails, null, userDetails.getAuthorities()
+	                );
+			
+			SecurityContextHolder.getContext().setAuthentication(authentication);
+			if (this.jwtTokenService.isTokenAboutToExpire(token)) {
+				token = JwtTokenService.generateToken(email);
+			}
+		}
+		
+		return token;
 	}
 }

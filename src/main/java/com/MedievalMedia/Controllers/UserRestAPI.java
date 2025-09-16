@@ -4,24 +4,51 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Repositories.UserRepository;
+import com.MedievalMedia.Services.JwtTokenService;
+import com.MedievalMedia.Services.UserService;
 
 @RestController
 @RequestMapping("/api/v1/user")
 public class UserRestAPI {
 	private Logger log = LoggerFactory.getLogger(UserRestAPI.class);
 	private UserRepository userRepository;
+	private JwtTokenService jwtTokenService; 
+	private UserService userService;
 	
-	public UserRestAPI(UserRepository userRepository) {
+	@Autowired
+	public UserRestAPI(UserRepository userRepository, JwtTokenService jwtTokenService,
+			UserService userService) {
 		this.userRepository = userRepository;
+		this.jwtTokenService = jwtTokenService;
+		this.userService = userService;
+	}
+	
+	@PostMapping("/auth")
+	public ResponseEntity<String> isUserAuthenticated(@RequestBody String token) {
+		try {
+			token = userService.isUserAuthenticated(token);
+
+			return ResponseEntity.status(HttpStatus.OK).body(token);
+		} catch (Exception e) {
+			e.printStackTrace();
+			this.log.error("Error verifying if user is already authenticated");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(token);
+		}
 	}
 
 	@PostMapping("/create")
