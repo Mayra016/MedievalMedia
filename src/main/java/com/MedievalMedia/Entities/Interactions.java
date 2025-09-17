@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.Data;
 
 
@@ -19,8 +20,19 @@ public class Interactions {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private long id;
+	
+	private float heart = 0f;
+    private float sword = 0f;
+    private float shield = 0f;
+    private float crown = 0f;
+    private float coin = 0f;
+    private float fav = 0f;
+    private float answer = 0f;
+	
+    @Transient
 	private HashMap<String, Float> reactions = new HashMap<>();
-	private HashMap<String, Float> points = new HashMap<>();
+    @Transient
+    private HashMap<String, Float> points = new HashMap<>();
 	
 	private float score = 0;
 	
@@ -30,13 +42,13 @@ public class Interactions {
 	}
 	
 	private void initializeReactions() {
-		this.reactions.put("heart", 0f);
-		this.reactions.put("sword", 0f);
-		this.reactions.put("shield", 0f);
-		this.reactions.put("crown", 0f);
-		this.reactions.put("coin", 0f);
-		this.reactions.put("fav", 0f);
-		this.reactions.put("answer", 0f);
+		this.reactions.put("heart", this.heart);
+		this.reactions.put("sword", this.sword);
+		this.reactions.put("shield", this.shield);
+		this.reactions.put("crown", this.crown);
+		this.reactions.put("coin", this.coin);
+		this.reactions.put("fav", this.fav);
+		this.reactions.put("answer", this.answer);
 	}
 	
 	private void initializePoints() {
@@ -57,6 +69,9 @@ public class Interactions {
 			this.reactions.replace(interaction, this.reactions.get(interaction) - 1);
 			this.score -= this.points.get(interaction);			
 		}
+
 	}
+	
+
 }
 		

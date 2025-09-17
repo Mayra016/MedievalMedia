@@ -134,4 +134,16 @@ public class PostService {
 			return List.of(new Post());
 		}
 	}
+
+
+	public List<Post> getPostsAnswers(Post post) {
+		try {
+			return this.postRepository.findAllByParent(post);
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting post answers");
+			
+			return List.of(new Post());
+		}
+	}
 }
