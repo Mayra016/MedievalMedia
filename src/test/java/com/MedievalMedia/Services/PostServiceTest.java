@@ -2,6 +2,7 @@ package com.MedievalMedia.Services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,9 @@ public class PostServiceTest {
     void initialize() {
     	User user = this.userRepository.save(new User());
         for (int i = 0; i < 61; i++) {
-            postRepository.save(new Post(user, "Greeting " + i, "Test content", "Spain", Language.ESPAÑOL));
+        	Post post = new Post(user, "Greeting " + i, "Test content", "Spain", Language.ESPAÑOL);
+        	post.setDate(LocalDate.now().minusDays(200-i));
+            postRepository.save(post);
         }
     }
 
@@ -52,6 +55,32 @@ public class PostServiceTest {
         List<Post> posts = postRepository.findLastFifthyByReign("Spain", PageRequest.of(0, 50));
         assertEquals(50, posts.size()); // verify if the method retrieve just the last 50      
         assertEquals("Greeting 59", posts.get(1).getGreetings()); // check if posts are order form latest to oldest
+    }
+    
+    @Test
+    void getLastPostsGlobalyTest() {
+    	List<Post> posts = new ArrayList<>();
+    
+    	User user = this.userRepository.save(new User());
+        for (int i = 62; i < 100; i++) {
+        	Post post = new Post(user, "Greeting " + i, "Test content", "Spain", Language.ESPAÑOL);
+        	post.setDate(LocalDate.now().minusDays(100-i));
+            postRepository.save(post);
+        }
+        
+        posts = this.postRepository.findLastFifthy(PageRequest.of(0,50));
+        
+        System.out.println("Most recent post from last call" + posts.get(0).getGreetings());
+        
+        assertEquals("Greeting 99", posts.get(0).getGreetings());
+        
+        System.out.println("Oldest post from last call " + posts.get(posts.size() - 2).getGreetings());
+        posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDesc(posts.get(posts.size() - 2).getDate(), posts.get(posts.size() - 2).getId());
+        
+        System.out.println("Most recent post from second call" + posts.get(0).getGreetings());
+        
+        assertEquals("Greeting 49", posts.get(0).getGreetings());
+              
     }
 }
 
