@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,6 +24,7 @@ import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
+import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Repositories.PostRepository;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.MedievalMedia.Services.PostService;
@@ -45,6 +47,35 @@ public class PostController {
 		this.postRepository = postRepository;
 		this.userService = userService;
 		this.postService = postService;
+	}
+	
+	@PutMapping("/update-post")
+	public ResponseEntity<Post> updatePost(@RequestBody UpdatePostDAO updateInfo) {
+		try {
+			Post updatedPost = this.postService.updateInteractions(updateInfo);
+
+			return ResponseEntity.status(HttpStatus.OK).body(updatedPost);
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error updating post's interactions");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Post());
+		}
+	}
+	
+	// read the answers of a letter
+	@PostMapping("/get-post-answers")
+	public ResponseEntity<List<Post>> getPostAnswers(@RequestBody Post post) {
+		try {
+			List<Post> posts = this.postService.getPostsAnswers(post);
+			return ResponseEntity.status(HttpStatus.OK).body(posts);
+			
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting post answers");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
+		}
 	}
 	
 	// get last posts with pagination sorted by latest

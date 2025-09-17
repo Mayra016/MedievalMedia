@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.TestDAO;
+import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Repositories.PostRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -144,6 +145,22 @@ public class PostService {
 			this.log.error("Error getting post answers");
 			
 			return List.of(new Post());
+		}
+	}
+
+
+	public Post updateInteractions(UpdatePostDAO updateInfo) {
+		try {
+			Post post = updateInfo.post();
+			post.getInteractions().updateReactions(updateInfo.reaction(), updateInfo.up());
+			this.postRepository.save(post);
+			
+			return post;
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error updating interactions");
+			
+			return new Post();
 		}
 	}
 }
