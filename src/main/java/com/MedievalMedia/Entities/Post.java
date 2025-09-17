@@ -49,4 +49,19 @@ public class Post {
 		this.language = language;
 	}
 	
+	public Post(User creator, String greetings, String content, String reign, Language language, Post parent) {
+		this.creator = creator;
+		this.greetings = greetings;
+		this.content = content;
+		this.reign = reign;
+		this.date = LocalDate.now();
+		this.interactions = new Interactions();
+		this.language = language;
+		this.parent = parent;
+	}
+	
+	public void updateInteractions(String interaction, boolean up) {
+		this.interactions.updateReactions(interaction, up);
+	}
+	
 }
