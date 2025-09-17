@@ -2,6 +2,7 @@ package com.MedievalMedia.Services;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -27,15 +29,23 @@ public class UserService implements UserDetailsService {
 	private final UserRepository userRepository;
     private Logger log = LoggerFactory.getLogger(UserService.class);
     private JwtTokenService jwtTokenService;
+    private EmailService emailService;
     private PasswordEncoder passwordEncoder;
     
     @Autowired
 	public UserService(UserRepository userRepository, JwtTokenService jwtTokenService,
-			PasswordEncoder passwordEncoder) {
+			PasswordEncoder passwordEncoder, EmailService emailService) {
 		this.userRepository = userRepository;
 		this.jwtTokenService = jwtTokenService;
 		this.passwordEncoder = passwordEncoder;
+		this.emailService = emailService;
 	}
+    
+    public UUID getCurrentUserId() {
+    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+		return (UUID) userDetails.getId();
+    }
     
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -120,6 +130,29 @@ public class UserService implements UserDetailsService {
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error authenticating login");
 			
+		}
+	}
+
+	public ResponseEntity<String> changeCredentials(String email) {
+		try {
+			Optional<User> searchUser = this.userRepository.findByEmail(email);
+
+			if (searchUser.isPresent()) {
+				User user = searchUser.get();
+				
+				String token = JwtTokenService.generateToken(email);
+				this.emailService.sendChangeCredentials(email, token, user.getAppLanguage());
+				
+				return ResponseEntity.status(HttpStatus.OK).body("Change password email successfuly sended");
+			} else {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+			}
+			
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error changing credentials");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sending email to change password");
 		}
 	}
 }
