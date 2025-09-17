@@ -30,6 +30,7 @@ import com.MedievalMedia.Repositories.PostRepository;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.MedievalMedia.Services.KafkaService;
 import com.MedievalMedia.Services.PostService;
+import com.MedievalMedia.Services.UserService;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.TopicPartition;
@@ -44,16 +45,19 @@ public class KafkaRestAPI {
 	private PostService productService;
 	private UserRepository userRepository;
 	private KafkaService kafkaService;
+	private UserService userService;
 	private List<String> kafkaPosts = new ArrayList<>();
 	private Logger log = LoggerFactory.getLogger(KafkaRestAPI.class);
 	
     @Autowired
     public KafkaRestAPI(UserRepository userRepository,
                         PostService productService,
-                        KafkaService kafkaService) {
+                        KafkaService kafkaService,
+                        UserService userService) {
         this.userRepository = userRepository;
         this.productService = productService;
         this.kafkaService = kafkaService;
+        this.userService = userService;
     }
 
     
@@ -77,10 +81,8 @@ public class KafkaRestAPI {
 	@PostMapping("sendPostToKafka")
 	public ResponseEntity<String> sendPostToKafka(@RequestBody PostDAO post) {
 		try {
-			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-			CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-			UUID userId = (UUID) userDetails.getId();
-			
+			UUID userId = this.userService.getCurrentUserId();
+					
 			try {
 				Optional<User> searchUser = userRepository.findById(userId);
 				
@@ -105,5 +107,4 @@ public class KafkaRestAPI {
 	}
 	
 
-}
 }
