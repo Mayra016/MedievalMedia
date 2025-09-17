@@ -1,5 +1,6 @@
 package com.MedievalMedia.Controllers;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,7 +48,19 @@ public class PostController {
 	}
 	
 	// get last posts with pagination sorted by latest
-	
+	@PostMapping("/global-posts")
+	public ResponseEntity<List<Post>> getLastPostsGlobaly(@RequestBody Post post) {
+		try {
+			List<Post> posts = this.postService.getLastPostsGlobaly(post);
+			
+			return ResponseEntity.status(HttpStatus.OK).body(posts);
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting global posts");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of( new Post()));
+		}
+	}
 	
 	
 	// get last posts with pagination filtered by reign 
@@ -101,7 +114,7 @@ public class PostController {
 			Optional<User> searchUser = this.userRepository.findById(userId);
 			
 			if (searchUser.isPresent()) {
-				List<Post> userPosts = this.postRepository.findAllByUserId(searchUser.get());
+				List<Post> userPosts = this.postRepository.findAllByCreator(searchUser.get());
 				return ResponseEntity.status(HttpStatus.OK).body(userPosts);
 			} else {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(new Post()));

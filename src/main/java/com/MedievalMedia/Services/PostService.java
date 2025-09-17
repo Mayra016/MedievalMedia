@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.security.cert.X509Certificate;
+import java.time.LocalDate;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
@@ -112,5 +114,24 @@ public class PostService {
 			return List.of(new Post());			
 		}
 		
+	}
+
+
+	public List<Post> getLastPostsGlobaly(Post post) {
+		try {
+			if (post.getDate() != LocalDate.of(1111, 11, 11)) {
+				List<Post> posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDesc(post.getDate(), post.getId());
+				return posts;
+			} else {
+				List<Post> posts = this.postRepository.findLastFifthy(PageRequest.of(0, 50));
+				return posts;
+			}
+						
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting last posts globaly");
+			
+			return List.of(new Post());
+		}
 	}
 }
