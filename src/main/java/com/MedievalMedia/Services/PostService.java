@@ -1,6 +1,8 @@
 package com.MedievalMedia.Services;
 
+import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.security.cert.X509Certificate;
 
 import javax.net.ssl.SSLContext;
@@ -14,6 +16,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
@@ -96,5 +99,18 @@ public class PostService {
 			e.printStackTrace();
 			return new Post();
 		}
+	}
+
+
+	public List<Post> getLastPostsByReign(String reign) {
+		try {
+			return this.postRepository.findLastFifthyByReign(reign, PageRequest.of(0,50));
+		} catch (Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting 50 most recent posts in " + reign);
+			
+			return List.of(new Post());			
+		}
+		
 	}
 }
