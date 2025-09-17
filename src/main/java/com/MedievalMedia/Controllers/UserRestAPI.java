@@ -39,6 +39,13 @@ public class UserRestAPI {
 		this.userService = userService;
 	}
 	
+	// change user credentials
+	
+	@PostMapping("/change-credentials")
+	public ResponseEntity<String> changeCredentials(@RequestBody String email) {
+		return this.userService.changeCredentials(email);
+	}
+	
 	@PostMapping("/login-authentication")
 	public ResponseEntity<String> authenticateUserFromLogin(@RequestBody UserDAO credentials) {
 		return this.userService.authenticateUser(credentials);
