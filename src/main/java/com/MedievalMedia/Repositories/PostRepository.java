@@ -31,4 +31,8 @@ public interface PostRepository extends JpaRepository<Post, Long>{
 	@Query("SELECT p FROM Post p WHERE p.greetings = :greetings")
 	Post findByGreetings(@Param("greetings") String greetings);
 
+
+	@Query("SELECT p FROM Post p WHERE p.creator IN :followedUsers ORDER BY p.date DESC")
+	List<Post> findAllByCreatorInOrderByDateDesc(@Param("followedUsers") List<User> followedUsers, Pageable pageable);
+
 }

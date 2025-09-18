@@ -78,6 +78,27 @@ public class PostController {
 		}
 	}
 	
+	@GetMapping("/get-followed-posts")
+	public ResponseEntity<List<Post>> getFollowPosts() {
+		try {
+			Optional<User> searchUser = this.userRepository.findById(this.userService.getCurrentUserId());
+			
+			if (searchUser.isPresent()) {
+				User user = searchUser.get();
+				List<Post> result = this.postService.getPostsFromFollowed(user);
+				
+				return ResponseEntity.status(HttpStatus.OK).body(result);
+			} else {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(new Post()));
+			}		
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting posts from followers");
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
+		}
+	}
+	
 	// read the answers of a letter
 	@PostMapping("/get-post-answers")
 	public ResponseEntity<List<Post>> getPostAnswers(@RequestBody Post post) {

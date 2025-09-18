@@ -11,8 +11,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.JoinColumn;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -33,7 +37,12 @@ public class User {
 	private LocalDate enterDate;
 	private String country;
 	private String[] titles = new String[1];
-	@OneToMany(mappedBy = "follows")
+	@ManyToMany
+	@JoinTable(
+	    name = "user_follows",
+	    joinColumns = @JoinColumn(name = "follower_id"),
+	    inverseJoinColumns = @JoinColumn(name = "followed_id")
+	)
 	private List<User> follow = new ArrayList<>();
 	
 	public User(String email, String password) {

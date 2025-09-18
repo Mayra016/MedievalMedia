@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
+import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.TestDAO;
 import com.MedievalMedia.Records.UpdatePostDAO;
@@ -161,6 +162,18 @@ public class PostService {
 			this.log.error("Error updating interactions");
 			
 			return new Post();
+		}
+	}
+
+
+	public List<Post> getPostsFromFollowed(User user) {
+		try {
+			return this.postRepository.findAllByCreatorInOrderByDateDesc(user.getFollow(), PageRequest.of(0, 50));
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Error getting posts from follows");
+			
+			return List.of(new Post());
 		}
 	}
 }
