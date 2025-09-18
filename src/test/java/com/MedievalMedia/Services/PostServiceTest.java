@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -107,6 +109,58 @@ public class PostServiceTest {
     	System.out.println(" First: " + posts.get(0));
     	
     	assertEquals(List.of(answer2, answer3, answer1), posts);
+    }
+    
+    @Test
+    void getPostsFromFollowsTest() {
+    	List<Post> posts = new ArrayList<>();
+    	User user1 = new User();
+    	User user2 = new User();
+    	User user3 = new User();
+
+    	  	
+    	user1.setUsername("Test 1");
+    	user2.setUsername("Test 2");
+    	user3.setUsername("Test 3");
+    	
+    	
+    	userRepository.save(user1);
+    	userRepository.save(user2);
+    	userRepository.save(user3);
+    	
+    	for ( byte i = 0; i < 9; i++) {
+    		Post post = postRepository.findByGreetings("Greeting "+i);
+    		post.setDate(LocalDate.now().minusDays(300 - i));
+    		
+    		if (i < 3 && i > 0) {
+    			post.setCreator(user1);
+    			post = postRepository.save(post);
+    		}
+    		
+    		if (i >= 3 && i < 6) {
+    			post.setCreator(user2);
+    			post = postRepository.save(post);
+    			posts.add(post);
+    		}
+    		
+    		if (i >= 6 && i < 9) {
+    			post.setCreator(user3);
+    			post = postRepository.save(post);
+    			posts.add(post);
+    		}
+    		
+    		
+    	}
+    	
+    	user1.setFollow(new ArrayList<>(Arrays.asList(user2, user3)));
+    	
+    	userRepository.save(user1);
+    	
+    	List<Post> followPosts = postRepository.findAllByCreatorInOrderByDateDesc(user1.getFollow(), PageRequest.of(0, 50));
+    	Collections.reverse(posts); // sort from newest to older
+    	System.out.println("Follow : " + followPosts.get(0));
+    	System.out.println(posts.get(0));
+    	assertEquals(followPosts, posts);
     }
 }
 
