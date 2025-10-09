@@ -215,4 +215,15 @@ public class PostService {
 			
 	
 	}
+
+
+	public void deletePost(long postId, String email) throws ResponseStatusException  {
+		Post post = this.postRepository.findById(postId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+		
+		if (post.getCreator().getEmail().equals(email)) {
+			this.postRepository.deleteById(postId);
+		} else {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only the post's creator can delete its post");
+		}		
+	}
 }

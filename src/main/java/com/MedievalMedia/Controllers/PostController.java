@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -88,11 +89,21 @@ public class PostController {
 	}
 	
 	@DeleteMapping("/delete-post")
-	public ResponseEntity<String> deletePost(@RequestBody long postId) {
+	public ResponseEntity<String> deletePost(@RequestBody long postId, HttpRequest request) {
 		try {
-			this.postRepository.deleteById(postId);
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+			}
+			String email = this.jwtService.extractEmail(token);
+			this.postService.deletePost(postId, email);
+			
 			
 			return ResponseEntity.status(HttpStatus.OK).body("Post was successful deleted");
+		} catch (ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.warn("Request failed: " + e.getReason());
+			return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error deleting post: " + postId);
