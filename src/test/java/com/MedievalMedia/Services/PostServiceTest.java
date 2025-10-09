@@ -1,6 +1,8 @@
 package com.MedievalMedia.Services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -22,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
@@ -33,6 +37,7 @@ import com.MedievalMedia.Repositories.UserRepository;
 public class PostServiceTest {
 	private PostRepository postRepository;
 	private UserRepository userRepository;
+	private PostService postService;
 	private User user;
 
 	@Autowired
@@ -45,12 +50,70 @@ public class PostServiceTest {
 
     @BeforeEach
     void initialize() {
+    	this.postService = new PostService(postRepository, userRepository);
     	user = this.userRepository.save(new User());
         for (int i = 0; i < 61; i++) {
         	Post post = new Post(user, "Greeting " + i, "Test content", "Spain", Language.ESPAÑOL);
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void addToFavoriteOK() {
+    	User user2 = new User();
+    	user2.setEmail("user2@test.com");
+    	this.userRepository.save(user2);
+    	Post post = postRepository.findByGreetings("Greeting 4");
+    	this.postService.addPostToFavorite(post, "user2@test.com");
+
+    	user2 = this.userRepository.findById(user2.getId()).get();
+    	assertTrue(user2.getFavoritePosts().contains(post));
+    }
+    
+    @Test
+    void addToFavoritePostNotFoundError() {
+    	User user2 = new User();
+    	user2.setEmail("user2@test.com");
+    	this.userRepository.save(user2);
+    	Post nonExisting = new Post();
+    	nonExisting.setId((long)-499);
+    	ResponseStatusException exception = assertThrows(
+    	        ResponseStatusException.class,
+    	        () -> postService.addPostToFavorite(nonExisting, "user@test2.com")
+    	);
+    	
+    	assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+    }
+    
+    @Test
+    void addToFavoriteUserNotFoundError() {
+    	User user2 = new User();
+    	user2.setEmail("user2@test.com");
+    	this.userRepository.save(user2);
+    	Post post = postRepository.findByGreetings("Greeting 4");
+    	ResponseStatusException exception = assertThrows(
+    	        ResponseStatusException.class,
+    	        () -> postService.addPostToFavorite(post, "user@test2.com")
+    	    );
+    	assertEquals(exception.getStatusCode(), HttpStatus.NOT_FOUND);
+    }
+    
+    @Test
+    void addToFavoriteCorruptedPostError() {
+    	User user2 = new User();
+    	user2.setEmail("user2@test.com");
+    	this.userRepository.save(user2);
+    	Post post = postRepository.findByGreetings("Greeting 4");
+    	Post fakePost = new Post();
+    	fakePost.setGreetings("Greeting 4");
+    	fakePost.setId(post.getId());
+    	fakePost.setContent("changed content");
+    	ResponseStatusException exception = assertThrows(
+    	        ResponseStatusException.class,
+    	        () -> postService.addPostToFavorite(fakePost, "user2@test.com")
+    	    );
+    	assertEquals(exception.getStatusCode(), HttpStatus.CONFLICT);
     }
 
     @Test
