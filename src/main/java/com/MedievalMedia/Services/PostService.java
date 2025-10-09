@@ -1,6 +1,7 @@
 package com.MedievalMedia.Services;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.security.cert.X509Certificate;
@@ -19,7 +20,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
@@ -27,6 +31,7 @@ import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.TestDAO;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Repositories.PostRepository;
+import com.MedievalMedia.Repositories.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,12 +40,15 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 @Service
 public class PostService {
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
     private final KafkaProducer<String, String> producer;
     private final Logger log = LoggerFactory.getLogger(PostService.class);
 
     @Autowired
-    public PostService(PostRepository postRepository) {
+    public PostService(PostRepository postRepository,
+    		UserRepository userRepository) {
         this.postRepository = postRepository;
+        this.userRepository = userRepository;
 
         Properties props = new Properties();
         props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -175,5 +183,27 @@ public class PostService {
 			
 			return List.of(new Post());
 		}
+	}
+
+
+	public void addPostToFavorite(Post post, String email) throws ResponseStatusException {
+
+			Optional<User> searchUser = this.userRepository.findByEmail(email);
+			Post searchPost = this.postRepository.findById(post.getId())
+			        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+
+			if (searchUser.isPresent()) {
+				User user = searchUser.get();
+				if (post.getContent().equals(searchPost.getContent())) {
+					user.addToFavorites(searchPost);
+				} else {
+					throw new ResponseStatusException(HttpStatus.CONFLICT, "Post doesn't match any know posts");
+				}
+				
+			} else {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+			}
+			
+	
 	}
 }

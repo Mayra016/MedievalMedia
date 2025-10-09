@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
@@ -28,6 +30,7 @@ import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Repositories.PostRepository;
 import com.MedievalMedia.Repositories.UserRepository;
+import com.MedievalMedia.Services.JwtTokenService;
 import com.MedievalMedia.Services.PostService;
 import com.MedievalMedia.Services.UserService;
 
@@ -39,6 +42,7 @@ public class PostController {
 	private PostRepository postRepository;
 	private UserService userService;
 	private PostService postService;
+	private JwtTokenService jwtService;
 	private Logger log = LoggerFactory.getLogger(PostController.class);
 	
 	@Autowired
@@ -48,6 +52,30 @@ public class PostController {
 		this.postRepository = postRepository;
 		this.userService = userService;
 		this.postService = postService;
+	}
+	
+	@PutMapping("/add-to-favorite")
+	public ResponseEntity<String> addToFavorite(@RequestBody Post post, HttpRequest request) {
+		try {
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User is not authorized");
+			}
+			String email = this.jwtService.extractEmail(token);
+			this.postService.addPostToFavorite(post, email);
+			
+			return ResponseEntity.status(HttpStatus.OK).body("Success adding post to favorite");
+			
+		} catch (ResponseStatusException e) {
+	        this.log.warn("Request failed: " + e.getReason());
+	        return ResponseEntity
+	                .status(e.getStatusCode())
+	                .body(e.getReason());
+		} catch (Exception e) {
+			e.printStackTrace();
+			this.log.error("Error adding post to favorite: " + post.getId());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error adding post to favorite");
+		}
 	}
 	
 	@DeleteMapping("/delete-post")

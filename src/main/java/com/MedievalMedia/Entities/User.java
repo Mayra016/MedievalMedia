@@ -2,17 +2,21 @@ package com.MedievalMedia.Entities;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.MedievalMedia.Enums.Language;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.JoinColumn;
@@ -44,6 +48,13 @@ public class User {
 	    inverseJoinColumns = @JoinColumn(name = "followed_id")
 	)
 	private List<User> follow = new ArrayList<>();
+	@ManyToMany(fetch = FetchType.LAZY)
+	@JoinTable(
+		name ="user_favposts",
+		joinColumns = @JoinColumn(name = "user_id"),
+		inverseJoinColumns = @JoinColumn(name = "post_id")
+	)
+	private Set<Post> favoritePosts = new HashSet<>();
 	
 	public User(String email, String password) {
 		this.email = email;
@@ -60,6 +71,11 @@ public class User {
 		this.enterDate = LocalDate.now();
 		this.country = country;
 		titles[0] = title;
+	}
+
+	public void addToFavorites(Post post) {
+		this.favoritePosts.add(post);
+		
 	}
 
 }

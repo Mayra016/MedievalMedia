@@ -7,12 +7,16 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Pageable;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long>{
+	
+	Optional<Post> findById(long id);
 
 	List<Post> findAllByCreator(User user);
 
