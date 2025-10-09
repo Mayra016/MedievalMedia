@@ -88,6 +88,15 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Delete one post
+	 *
+	 * @param postId The id of the post to delete
+	 * @param request The HTTP request containing headers to verify the JWT token
+	 * @return ResponseEntity containing a message of the HTTP status code
+	 * @throws ResponseStatusException if post not found or if the email doesn't match the post's creator
+	 */
+	
 	@DeleteMapping("/delete-post")
 	public ResponseEntity<String> deletePost(@RequestBody long postId, HttpRequest request) {
 		try {
