@@ -215,4 +215,23 @@ public class PostService {
 			
 	
 	}
+
+	/**
+	 * Delete one post
+	 *
+	 * @param postId The id of the post to delete
+	 * @param email The email extracted from the JWT token of the requesting user
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if post not found
+	 *  UNAUTHORIZED: if the email doesn't match the creator of the post
+	 */
+	public void deletePost(long postId, String email) throws ResponseStatusException  {
+		Post post = this.postRepository.findById(postId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+		
+		if (post.getCreator().getEmail().equals(email)) {
+			this.postRepository.deleteById(postId);
+		} else {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only the post's creator can delete its post");
+		}		
+	}
 }

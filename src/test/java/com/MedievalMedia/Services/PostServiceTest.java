@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.crossstore.ChangeSetPersister.NotFoundException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -52,11 +54,46 @@ public class PostServiceTest {
     void initialize() {
     	this.postService = new PostService(postRepository, userRepository);
     	user = this.userRepository.save(new User());
+    	user.setEmail("user1@test.com");
         for (int i = 0; i < 61; i++) {
         	Post post = new Post(user, "Greeting " + i, "Test content", "Spain", Language.ESPAÑOL);
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void deletePostOK() {
+    	Post post = postRepository.findByGreetings("Greeting 60");
+    	this.postService.deletePost(post.getId(), post.getCreator().getEmail());
+    	 
+    	Optional<Post> search = this.postRepository.findById(post.getId());
+    	assertTrue(search.isEmpty());
+    }
+    
+    @Test
+    void deletePostUnauthorizedUser() {
+    	Post post = postRepository.findByGreetings("Greeting 60");
+
+    	ResponseStatusException exception = assertThrows(
+    			ResponseStatusException.class,
+    	        () -> postService.deletePost(post.getId(), "invalidEmail.com")
+    	);
+    	 
+    	assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
+    }
+    
+    @Test
+    void deletePostNotFound() {
+    	Post post = new Post();
+    	post.setId(-456L);
+
+    	ResponseStatusException exception = assertThrows(
+    			ResponseStatusException.class,
+    	        () -> postService.deletePost(post.getId(), "email.com")
+    	);
+    	 
+    	assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
     
     @Test
