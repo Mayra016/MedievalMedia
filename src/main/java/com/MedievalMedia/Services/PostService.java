@@ -184,7 +184,16 @@ public class PostService {
 			return List.of(new Post());
 		}
 	}
-
+	
+	/**
+	 * Add one post to user's favorite posts
+	 *
+	 * @param post The post that will be added
+	 * @param email Email of the user that marked this post as favorite
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND if user or post not found
+	 *  CONFLICT if post content doesn't match database
+	 */
 
 	public void addPostToFavorite(Post post, String email) throws ResponseStatusException {
 

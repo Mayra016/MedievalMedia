@@ -54,6 +54,15 @@ public class PostController {
 		this.postService = postService;
 	}
 	
+	/**
+	 * Add one post to user's favorite posts
+	 *
+	 * @param post The post that will be added
+	 * @param request Access headers to verify jwt token
+	 * @return ResponseEntity with the petition status code
+	 * @throws ResponseStatusException if user not found, post is invalid or post not found
+	 */
+
 	@PutMapping("/add-to-favorite")
 	public ResponseEntity<String> addToFavorite(@RequestBody Post post, HttpRequest request) {
 		try {
