@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/styles/index.css" rel="stylesheet">
+    <link href="/styles/profile.css" rel="stylesheet">
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="#{PROFILE-TITLE}">Profile</title>
+    <link rel="icon" type="image/png" href="assets/favicon.jpg">
+</head>
+
+<header>  
+	<div class="logo">
+  		<h3>⚔️</h3><h1>  MedievalMedia  </h1><h3>🏰</h3>
+  	</div>
+</header>
+
+<main>
+  <div class="center column card post">
+     <div class="creator">
+      <div class="profileImg">
+        <img src="https://img.icons8.com/?size=100&id=33901&format=png&color=000000">
+      </div>
+      <div class="nameTitle">
+        <h4>Name</h4>
+        <h6>Title</h6>
+      </div>
+
+    </div>
+
+    <h5 class="reign-bio">Reign of</h5>
+      <div class="right">
+               <button class="edit">🪶</button>
+       </div>
+  </div>
+    <div class="post userConfig">
+    <div class="property">
+      <label>Username:</label>
+      <input type="text">
+    </div>
+    
+        <div class="property">
+      <label>Email:</label>
+      <input type="text">
+    </div>
+        <div class="property">
+      <label>Select the languages you desire to receive letters:</label><br>
+          <label>
+            <input type="checkbox" value="English"> English</label>
+          
+          <label>
+            <input type="checkbox" value="Spanish"> Spanish</label>
+          <label>
+            <input type="checkbox" value="German"> German</label>
+          
+    </div>
+    <div class="property">
+      <label>App language</label>
+      <select id="appLanguage">
+        <option value="English">English</option>
+        <option value="Spanish">Spanish</option>
+        <option value="German">German</option>
+        <option value="Portuguese">Portuguese</option>
+      </select>
+    </div>
+    
+    <div class="property">
+      <label>Birthday: </label>
+  <input type="date">
+    </div>
+    <div class="property">
+      <label>In which reign are you living? </label><br>
+      <input type="text" > 
+    </div>
+    <div class="property">
+      <label>Your titles, sir</label>
+      <input type="text">   
+    </div>
+<div class="center">     <button class="sendBtn" style="justify-content:center;">Save</button></div>
+<div class="audio-player"> 
+  <div class=" scrolling-text musicTitle">
+ 	  <span> 🎺 Epic medieval music</span>
+  </div>
+  <div class="playerBtns">
+	  <button>⏮️</button><button>▶️</button><button>⏭️</button>
+	  <div class="volume-container">
+		  <button class="volume">🔊</button>
+		  <input type="range" min="0" max="100" value="50" class="volume-slider">
+	  </div>
+
+  </div>
+</div>
+    
+    <div class="menu">
+     <select>
+        <option default>🛖</option>
+	    <option>📮</option>
+	    <option>🤺</option>
+      </select>
+     
+    </div>
+</main>
+<iframe style="opacity: 0;pointer-events: none;" width="560" height="315"
+  src="https://www.youtube.com/embed/videoseries?list=PLnuhlOfdJ2WKvIu8eaF3uel9p3VjuK10M&autoplay=1&mute=0&controls=0&loop=1"
+  title="YouTube video player" frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+</iframe>
+<script type="module" th:inline="javascript" defer>
+var csrfTokenElement = document.querySelector("meta[name='_csrf']");
+var csrfToken = csrfTokenElement ? csrfTokenElement.getAttribute("content") : null;
+var csrfHeaderElement = document.querySelector("meta[name='_csrf_header']");
+var csrfHeader = csrfHeaderElement ? csrfHeaderElement.getAttribute("content") : null;
+
+
+
+</script>
+</body>
+</html>
+
+
