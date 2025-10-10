@@ -32,6 +32,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Enums.Language;
+import com.MedievalMedia.Records.UpdatePostDAO;
+import com.MedievalMedia.Records.UpdatedPostResponse;
 import com.MedievalMedia.Repositories.PostRepository;
 import com.MedievalMedia.Repositories.UserRepository;
 
@@ -60,6 +62,40 @@ public class PostServiceTest {
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void updateInteractionsOK() {
+    	Post oldPost = this.postRepository.findByGreetings("Greeting 50");
+    	UpdatePostDAO dao = new UpdatePostDAO(oldPost, "heart", true);
+    	this.postService.updateInteractions(dao, "user1@test.com");
+
+    	assertTrue(oldPost.getInteractions().getReactions().get("heart") > 0f);
+    	
+    }
+    
+    @Test
+    void updateInteractionsPostNotFound() {
+    	Post invalidPost = new Post();
+    	invalidPost.setId(-456L);
+    	UpdatePostDAO dao = new UpdatePostDAO(invalidPost, "heart", true);
+
+    	UpdatedPostResponse exception = this.postService.updateInteractions(dao, "user1@test.com");
+    
+    	
+    	assertEquals(HttpStatus.NOT_FOUND, exception.response().getStatusCode());
+    	
+    }
+    
+    @Test
+    void updateInteractionsUnauthorized() {
+    	Post post = this.postRepository.findByGreetings("Greeting 50");
+    	UpdatePostDAO dao = new UpdatePostDAO(post, "heart", true);
+
+    	UpdatedPostResponse exception = this.postService.updateInteractions(dao, "unauthorized@test.com");
+    	
+    	assertEquals(HttpStatus.UNAUTHORIZED, exception.response().getStatusCode());
+    	
     }
     
     @Test
