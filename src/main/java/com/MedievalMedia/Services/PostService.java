@@ -158,6 +158,16 @@ public class PostService {
 		}
 	}
 
+	/**
+	 * Update a post
+	 *
+	 * @param updateInfo A DAO object containing the post, the new interaction type, and whether it is positive or negative
+	 * @param email Email of the user performing the interaction
+	 * @return UpdatedPostResponse containing a message of the HTTP status code and the post in case of success
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if post not found
+	 * 	UNAUTHORIZED: if the extracted email doesn't match the post's creator
+	 */
 
 	public UpdatedPostResponse updateInteractions(UpdatePostDAO updateInfo, String email) throws ResponseStatusException {
 		Post post = updateInfo.post();

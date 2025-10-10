@@ -122,6 +122,15 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Update a post
+	 *
+	 * @param updateInfo A DAO object containing the post, the new interaction type, and whether it is positive or negative
+	 * @param request The HTTP request containing headers to verify the JWT token
+	 * @return ResponseEntity containing a message of the HTTP status code and the updated post in case of success
+	 * @throws ResponseStatusException if post not found or if the email doesn't match the post's creator
+	 */
+	
 	@PutMapping("/update-post")
 	public ResponseEntity<Post> updatePost(@RequestBody UpdatePostDAO updateInfo, HttpRequest request) {
 		try {
