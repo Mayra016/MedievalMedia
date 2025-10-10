@@ -29,6 +29,7 @@ import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.UpdatePostDAO;
+import com.MedievalMedia.Records.UpdatedPostResponse;
 import com.MedievalMedia.Repositories.PostRepository;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.MedievalMedia.Services.JwtTokenService;
@@ -121,12 +122,30 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Update a post
+	 *
+	 * @param updateInfo A DAO object containing the post, the new interaction type, and whether it is positive or negative
+	 * @param request The HTTP request containing headers to verify the JWT token
+	 * @return ResponseEntity containing a message of the HTTP status code and the updated post in case of success
+	 * @throws ResponseStatusException if post not found or if the email doesn't match the post's creator
+	 */
+	
 	@PutMapping("/update-post")
-	public ResponseEntity<Post> updatePost(@RequestBody UpdatePostDAO updateInfo) {
+	public ResponseEntity<Post> updatePost(@RequestBody UpdatePostDAO updateInfo, HttpRequest request) {
 		try {
-			Post updatedPost = this.postService.updateInteractions(updateInfo);
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			if (!this.jwtService.validateToken(token)) {
+				// Invalid credentials
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new Post());
+			}
+			String email = this.jwtService.extractEmail(token);
+			
+			UpdatedPostResponse updatedPost = this.postService.updateInteractions(updateInfo, email);
+			
 
-			return ResponseEntity.status(HttpStatus.OK).body(updatedPost);
+			return updatedPost.response().getStatusCode() == HttpStatus.OK ? ResponseEntity.status(HttpStatus.OK).body(updatedPost.post()) : 
+				ResponseEntity.status(updatedPost.response().getStatusCode()).body(new Post());
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error updating post's interactions");

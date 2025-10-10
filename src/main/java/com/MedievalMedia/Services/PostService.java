@@ -30,6 +30,7 @@ import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.TestDAO;
 import com.MedievalMedia.Records.UpdatePostDAO;
+import com.MedievalMedia.Records.UpdatedPostResponse;
 import com.MedievalMedia.Repositories.PostRepository;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -157,20 +158,36 @@ public class PostService {
 		}
 	}
 
+	/**
+	 * Update a post
+	 *
+	 * @param updateInfo A DAO object containing the post, the new interaction type, and whether it is positive or negative
+	 * @param email Email of the user performing the interaction
+	 * @return UpdatedPostResponse containing a message of the HTTP status code and the post in case of success
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if post not found
+	 * 	UNAUTHORIZED: if the extracted email doesn't match the post's creator
+	 */
 
-	public Post updateInteractions(UpdatePostDAO updateInfo) {
-		try {
-			Post post = updateInfo.post();
-			post.getInteractions().updateReactions(updateInfo.reaction(), updateInfo.up());
-			this.postRepository.save(post);
-			
-			return post;
-		} catch(Exception e) {
-			e.printStackTrace();
-			this.log.error("Error updating interactions");
-			
-			return new Post();
+	public UpdatedPostResponse updateInteractions(UpdatePostDAO updateInfo, String email) throws ResponseStatusException {
+		Post post = updateInfo.post();
+		Optional<Post> searchPost = postRepository.findById(post.getId());
+		
+		if (searchPost.isEmpty()) {
+			return new UpdatedPostResponse(new Post(), new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
 		}
+		
+		Post originalPost = searchPost.get();
+		
+		if (post.getCreator().getEmail().equals(email) && originalPost.getCreator().getEmail().equals(email)) {
+			originalPost.getInteractions().updateReactions(updateInfo.reaction(), updateInfo.up());
+			this.postRepository.save(originalPost);
+		} else {
+			return new UpdatedPostResponse(new Post(), new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only the post's creator can update its post"));
+		}
+			
+			
+		return new UpdatedPostResponse(post, new ResponseStatusException(HttpStatus.OK));
 	}
 
 
