@@ -6,6 +6,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -129,14 +130,28 @@ public class PostService {
 		
 	}
 
+	/**
+	 * Get last posts with pagination sorted by latest
+	 *
+	 * @param post The last post loaded or a post with the date 11/11/1111 to signalizes that it is the first time to load the page
+	 * @param userId The user id of the user who made the request to filter its posts
+	 * @return List<Post> a list with the latest posts
+	 * @throws ResponseStatusException 
+	 * 	BAD_REQUEST: if posts were not found 
+	 */
 
-	public List<Post> getLastPostsGlobaly(Post post) {
+	public List<Post> getLastPostsGlobaly(Post post, UUID userId) {
+
 		try {
-			if (post.getDate() != LocalDate.of(1111, 11, 11)) {
-				List<Post> posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDesc(post.getDate(), post.getId());
+			// if user is scrolling down and needs more older posts. It needs the last loaded post id and date in aim to load older posts
+
+			if (!post.getDate().equals(LocalDate.of(1111, 11, 11))) {
+				Long lastId = this.postRepository.findLastPostId(PageRequest.of(0, 1)).get(0);
+				List<Post> posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDesc(post.getDate(), lastId, PageRequest.of(0, 50), userId);
 				return posts;
 			} else {
-				List<Post> posts = this.postRepository.findLastFifthy(PageRequest.of(0, 50));
+			// if the user requested global posts for first page loading
+				List<Post> posts = this.postRepository.findLastFifthy(PageRequest.of(0, 50), userId);
 				return posts;
 			}
 						
@@ -144,7 +159,8 @@ public class PostService {
 			e.printStackTrace();
 			this.log.error("Error getting last posts globaly");
 			
-			return List.of(new Post());
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error getting last posts globaly");
+			
 		}
 	}
 

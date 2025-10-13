@@ -210,16 +210,34 @@ public class PostController {
 		}
 	}
 	
-	// get last posts with pagination sorted by latest
-	@PostMapping("/global-posts")
-	public ResponseEntity<List<Post>> getLastPostsGlobaly(@RequestBody Post post) {
+	/**
+	 * Get last posts with pagination sorted by latest
+	 *
+	 * @param post The last post loaded or a post with the date 11/11/1111 to signalizes that it is the first time to load the page
+	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts
+	 * @throws ResponseStatusException if posts were not found 
+	 */
+	
+	@PostMapping("/get-global-posts")
+	public ResponseEntity<List<Post>> getLastPostsGlobaly(Post post, HttpRequest request) {
 		try {
-			List<Post> posts = this.postService.getLastPostsGlobaly(post);
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			if (this.jwtService.validateToken(token)) {
+				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non authorized user");
+			}
+			String email = this.jwtService.extractEmail(token);
+			
+			List<Post> posts = this.postService.getLastPostsGlobaly(post, this.userService.getCurrentUserId(email));
 			
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
-		} catch(Exception e) {
+		} catch(ResponseStatusException e) {
 			e.printStackTrace();
 			this.log.error("Error getting global posts");
+			
+			return ResponseEntity.status(e.getStatusCode()).body(List.of( new Post()));
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Unknow error getting global posts");
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of( new Post()));
 		}
