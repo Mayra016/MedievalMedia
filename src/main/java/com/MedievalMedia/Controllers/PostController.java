@@ -154,12 +154,18 @@ public class PostController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Post());
 		}
 	}
+
 	
 	@GetMapping("/get-followed-posts")
-	public ResponseEntity<List<Post>> getFollowPosts() {
+	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {
 		try {
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			if (this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
+			}
+			String email = this.jwtService.extractEmail(token);
 			
-			PostsResponse response = this.postService.getFollowedPosts(this.userService.getCurrentUserId());
+			PostsResponse response = this.postService.getFollowedPosts(this.userService.getCurrentUserId(email));
 			
 			return ResponseEntity.status(response.exception().getStatusCode()).body(response.posts());
 		} catch(Exception e) {
