@@ -154,7 +154,14 @@ public class PostController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Post());
 		}
 	}
-
+	
+	/**
+	 * Get followed posts
+	 *
+	 * @param request The HTTP request containing headers to verify the JWT token
+	 * @return ResponseEntity containing a message of the HTTP status code and the followed post in case of success
+	 * @throws ResponseStatusException if post or user not found or user unauthorized
+	 */
 	
 	@GetMapping("/get-followed-posts")
 	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {

@@ -254,6 +254,14 @@ public class PostService {
 		}		
 	}
 
+	/**
+	 * Get followed posts
+	 *
+	 * @param id The id of the user who requested the posts
+	 * @return PostsResponse containing a message of the HTTP status code and the followed post in case of success
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if post or user not found
+	 */
 
 	public PostsResponse getFollowedPosts(UUID id) {
 		Optional<User> searchUser = this.userRepository.findById(id);
