@@ -148,6 +148,13 @@ public class PostService {
 		}
 	}
 
+	/**
+	 * Get the answers of a posts
+	 *
+	 * @param post The post to get the answers
+	 * @return List<Post> containing the post answers in case of success
+	 * @throws ResponseStatusException if answers not found 
+	 */
 
 	public List<Post> getPostsAnswers(Post post) {
 		try {

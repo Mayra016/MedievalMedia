@@ -183,7 +183,14 @@ public class PostController {
 		}
 	}
 	
-	// read the answers of a letter
+	/**
+	 * Get the answers of a posts
+	 *
+	 * @param post The post to get the answers
+	 * @return ResponseEntity containing a message of the HTTP status code and its answers in case of success
+	 * @throws ResponseStatusException if answers not found 
+	 */
+	
 	@PostMapping("/get-post-answers")
 	public ResponseEntity<List<Post>> getPostAnswers(@RequestBody Post post) {
 		try {
