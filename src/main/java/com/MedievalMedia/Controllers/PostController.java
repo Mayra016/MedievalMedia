@@ -210,7 +210,14 @@ public class PostController {
 		}
 	}
 	
-	// get last posts with pagination sorted by latest
+	/**
+	 * Get last posts with pagination sorted by latest
+	 *
+	 * @param post The last post loaded or a post with the date 11/11/1111 to signalizes that it is the first time to load the page
+	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts
+	 * @throws ResponseStatusException if posts were not found 
+	 */
+	
 	@PostMapping("/get-global-posts")
 	public ResponseEntity<List<Post>> getLastPostsGlobaly(Post post, HttpRequest request) {
 		try {

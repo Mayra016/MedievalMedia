@@ -130,6 +130,15 @@ public class PostService {
 		
 	}
 
+	/**
+	 * Get last posts with pagination sorted by latest
+	 *
+	 * @param post The last post loaded or a post with the date 11/11/1111 to signalizes that it is the first time to load the page
+	 * @param userId The user id of the user who made the request to filter its posts
+	 * @return List<Post> a list with the latest posts
+	 * @throws ResponseStatusException 
+	 * 	BAD_REQUEST: if posts were not found 
+	 */
 
 	public List<Post> getLastPostsGlobaly(Post post, UUID userId) {
 
