@@ -118,6 +118,14 @@ public class PostService {
 		}
 	}
 
+	/**
+	 * Get last posts with pagination filtered by reign 
+	 *
+	 * @param reign The reign that the letters must be published
+	 * @return List<Post> a list with the latest posts that were published in this reign
+	 * @throws ResponseStatusException 
+	 * 	BAD_REQUEST: if posts could not be reached
+	 */
 
 	public List<Post> getLastPostsByReign(String reign) {
 		try {
