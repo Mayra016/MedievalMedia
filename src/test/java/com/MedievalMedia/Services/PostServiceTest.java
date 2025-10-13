@@ -67,6 +67,22 @@ public class PostServiceTest {
     }
     
     @Test
+    void getPostsAnswers() {
+    	Post post3 = this.postRepository.findByGreetings("Greeting 3");
+    	Post post2 = this.postRepository.findByGreetings("Greeting 2");
+    	Post post1 = this.postRepository.findByGreetings("Greeting 1");
+    	
+    	post2.setParent(post1);
+    	post3.setParent(post1);
+    	
+    	List<Post> posts = this.postService.getPostsAnswers(post1);
+    	
+    	posts.forEach(post -> System.out.println("______________" + post.getGreetings()));
+    	
+    	assertEquals(posts.size(), 2);
+    }
+    
+    @Test
     void getFollowedPosts() {
     	User user2 = new User();
     	user2.setFollow(List.of(this.user));
