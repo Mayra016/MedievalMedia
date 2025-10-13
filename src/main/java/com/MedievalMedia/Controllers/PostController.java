@@ -28,6 +28,7 @@ import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
+import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Records.UpdatedPostResponse;
 import com.MedievalMedia.Repositories.PostRepository;
@@ -154,19 +155,26 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Get followed posts
+	 *
+	 * @param request The HTTP request containing headers to verify the JWT token
+	 * @return ResponseEntity containing a message of the HTTP status code and the followed post in case of success
+	 * @throws ResponseStatusException if post or user not found or user unauthorized
+	 */
+	
 	@GetMapping("/get-followed-posts")
-	public ResponseEntity<List<Post>> getFollowPosts() {
+	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {
 		try {
-			Optional<User> searchUser = this.userRepository.findById(this.userService.getCurrentUserId());
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			if (this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
+			}
+			String email = this.jwtService.extractEmail(token);
 			
-			if (searchUser.isPresent()) {
-				User user = searchUser.get();
-				List<Post> result = this.postService.getPostsFromFollowed(user);
-				
-				return ResponseEntity.status(HttpStatus.OK).body(result);
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(new Post()));
-			}		
+			PostsResponse response = this.postService.getFollowedPosts(this.userService.getCurrentUserId(email));
+			
+			return ResponseEntity.status(response.exception().getStatusCode()).body(response.posts());
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting posts from followers");

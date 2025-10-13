@@ -32,6 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Enums.Language;
+import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Records.UpdatedPostResponse;
 import com.MedievalMedia.Repositories.PostRepository;
@@ -57,11 +58,24 @@ public class PostServiceTest {
     	this.postService = new PostService(postRepository, userRepository);
     	user = this.userRepository.save(new User());
     	user.setEmail("user1@test.com");
+    	
         for (int i = 0; i < 61; i++) {
         	Post post = new Post(user, "Greeting " + i, "Test content", "Spain", Language.ESPAÑOL);
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void getFollowedPosts() {
+    	User user2 = new User();
+    	user2.setFollow(List.of(this.user));
+    	user2 = this.userRepository.save(user2);
+    	
+    	PostsResponse response = this.postService.getFollowedPosts(user2.getId());
+    	
+    	assertEquals(HttpStatus.OK, response.exception().getStatusCode());
+    	assertTrue(response.posts().size() > 2);
     }
     
     @Test

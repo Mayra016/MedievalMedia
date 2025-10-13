@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
+import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.TestDAO;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Records.UpdatedPostResponse;
@@ -250,5 +252,36 @@ public class PostService {
 		} else {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Only the post's creator can delete its post");
 		}		
+	}
+
+	/**
+	 * Get followed posts
+	 *
+	 * @param id The id of the user who requested the posts
+	 * @return PostsResponse containing a message of the HTTP status code and the followed post in case of success
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if post or user not found
+	 */
+
+	public PostsResponse getFollowedPosts(UUID id) {
+		Optional<User> searchUser = this.userRepository.findById(id);
+		
+		if (searchUser.isPresent()) {
+			User user = searchUser.get();
+			try {
+				List<Post> posts =  this.postRepository.findAllByCreatorInOrderByDateDesc(user.getFollow(), PageRequest.of(0, 50));
+				return new PostsResponse(posts, new ResponseStatusException(HttpStatus.OK, "Success getting followed posts"));
+			} catch(Exception e) {
+				e.printStackTrace();
+				this.log.error("Error getting posts from follows");
+				
+				return new PostsResponse(List.of(new Post()), new ResponseStatusException(HttpStatus.NOT_FOUND, "Posts not found"));
+			}
+			
+		} else {
+			return new PostsResponse(List.of(new Post()), new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		}	
+		
+		
 	}
 }
