@@ -318,8 +318,16 @@ public class PostService {
 		
 	}
 
+	/**
+	 * Create a post
+	 *
+	 * @param post The post information
+	 * @param userId The user id of the authenticated user who made the request
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if user were not found 
+	 */
 
-	public void createPost(PostDAO post, UUID userId) {
+	public void createPost(PostDAO post, UUID userId) throws ResponseStatusException {
 		User creator = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		Post newPost = new Post (creator, post.greetings(), post.content(), post.reign(), post.language());
 		this.postRepository.save(newPost);		
