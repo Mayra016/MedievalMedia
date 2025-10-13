@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -117,6 +118,14 @@ public class PostService {
 		}
 	}
 
+	/**
+	 * Get last posts with pagination filtered by reign 
+	 *
+	 * @param reign The reign that the letters must be published
+	 * @return List<Post> a list with the latest posts that were published in this reign
+	 * @throws ResponseStatusException 
+	 * 	BAD_REQUEST: if posts could not be reached
+	 */
 
 	public List<Post> getLastPostsByReign(String reign) {
 		try {
@@ -125,7 +134,7 @@ public class PostService {
 			e.printStackTrace();
 			this.log.error("Error getting 50 most recent posts in " + reign);
 			
-			return List.of(new Post());			
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error getting 50 latest posts in the reign: " + reign);	
 		}
 		
 	}

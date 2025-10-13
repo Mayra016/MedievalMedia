@@ -243,17 +243,34 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Get last posts with pagination filtered by reign 
+	 *
+	 * @param reign The reign that the letters must be published
+	 * @param request The http request to access jwt token and verify if user is loged in
+	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts that were published in this reign
+	 * @throws ResponseStatusException if posts were not found 
+	 */
 	
-	// get last posts with pagination filtered by reign 
-	@GetMapping("/posts")
-	public ResponseEntity<List<Post>> getLastPostsByReign(@RequestParam String reign) {
+	@GetMapping("/posts-by-reign")
+	public ResponseEntity<List<Post>> getLastPostsByReign(@RequestParam String reign, HttpRequest request) {
 		try {
+			String token = request.getHeaders().get("Authorize").toString().replace("Bearer: ", "");
+			if (this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
+			}
+			
 			List<Post> result = this.postService.getLastPostsByReign(reign);
 			
 			return ResponseEntity.status(HttpStatus.OK).body(result);
-		} catch(Exception e) {
+		} catch(ResponseStatusException e) {
 			e.printStackTrace();
 			this.log.error("Error getting 50 most recent posts in " + reign);
+			
+			return ResponseEntity.status(e.getStatusCode()).body(List.of(new Post()));
+		} catch(Exception e) {
+			e.printStackTrace();
+			this.log.error("Unknow error getting 50 most recent posts in " + reign);
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
 		}
