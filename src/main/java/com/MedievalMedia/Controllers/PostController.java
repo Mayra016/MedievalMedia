@@ -279,10 +279,19 @@ public class PostController {
 	
 
 	@PostMapping("/create-post")
-	public ResponseEntity<String> insertData(@RequestBody PostDAO post) {
+	public ResponseEntity<String> insertData(@RequestBody PostDAO post, HttpRequest request) {
 		try {
-			UUID userId = this.userService.getCurrentUserId();
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			
+			if (this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authorized user");
+			}
+			
+			String email = this.jwtService.extractEmail(token);
+			
+			UUID userId = this.userService.getCurrentUserId(email);
+			
+			this.postService.createPost(post, userId);
 			try {
 				Optional<User> searchUser = userRepository.findById(userId);
 				

@@ -30,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
+import com.MedievalMedia.Enums.Language;
 import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.TestDAO;
@@ -315,5 +316,12 @@ public class PostService {
 		}	
 		
 		
+	}
+
+
+	public void createPost(PostDAO post, UUID userId) {
+		User creator = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		Post newPost = new Post (creator, post.greetings(), post.content(), post.reign(), post.language());
+		this.postRepository.save(newPost);		
 	}
 }
