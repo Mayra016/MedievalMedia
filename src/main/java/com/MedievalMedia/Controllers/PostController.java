@@ -183,13 +183,25 @@ public class PostController {
 		}
 	}
 	
-	// read the answers of a letter
+	/**
+	 * Get the answers of a posts
+	 *
+	 * @param post The post to get the answers
+	 * @return ResponseEntity containing a message of the HTTP status code and its answers in case of success
+	 * @throws ResponseStatusException if answers not found 
+	 */
+	
 	@PostMapping("/get-post-answers")
 	public ResponseEntity<List<Post>> getPostAnswers(@RequestBody Post post) {
 		try {
 			List<Post> posts = this.postService.getPostsAnswers(post);
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
 			
+		} catch(ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.error("Post answers not found");
+			
+			return ResponseEntity.status(e.getStatusCode()).body(List.of(new Post()));
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting post answers");
