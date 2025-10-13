@@ -1,6 +1,7 @@
 package com.MedievalMedia.Services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -67,6 +68,17 @@ public class PostServiceTest {
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void getLastPostsByReign() {
+    	Post post = this.postRepository.findByGreetings("Greeting 50");
+    	post.setReign("Deutschland");
+    	
+    	List<Post> posts = this.postService.getLastPostsByReign("Spain");
+    	
+    	assertFalse(posts.contains(post));
+    	assertEquals(posts.size(), 50);
     }
     
     @Test
