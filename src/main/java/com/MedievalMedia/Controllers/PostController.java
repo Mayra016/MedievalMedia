@@ -190,6 +190,11 @@ public class PostController {
 			List<Post> posts = this.postService.getPostsAnswers(post);
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
 			
+		} catch(ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.error("Post answers not found");
+			
+			return ResponseEntity.status(e.getStatusCode()).body(List.of(new Post()));
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting post answers");

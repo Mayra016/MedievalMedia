@@ -156,7 +156,7 @@ public class PostService {
 			e.printStackTrace();
 			this.log.error("Error getting post answers");
 			
-			return List.of(new Post());
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No answers found");
 		}
 	}
 
