@@ -28,6 +28,7 @@ import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.PostDAO;
+import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Records.UpdatedPostResponse;
 import com.MedievalMedia.Repositories.PostRepository;
@@ -157,16 +158,10 @@ public class PostController {
 	@GetMapping("/get-followed-posts")
 	public ResponseEntity<List<Post>> getFollowPosts() {
 		try {
-			Optional<User> searchUser = this.userRepository.findById(this.userService.getCurrentUserId());
 			
-			if (searchUser.isPresent()) {
-				User user = searchUser.get();
-				List<Post> result = this.postService.getPostsFromFollowed(user);
-				
-				return ResponseEntity.status(HttpStatus.OK).body(result);
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(new Post()));
-			}		
+			PostsResponse response = this.postService.getFollowedPosts(this.userService.getCurrentUserId());
+			
+			return ResponseEntity.status(response.exception().getStatusCode()).body(response.posts());
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting posts from followers");
