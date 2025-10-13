@@ -277,31 +277,38 @@ public class PostController {
 		
 	}
 	
+	/**
+	 * Create a post
+	 *
+	 * @param post The post information
+	 * @param request The http request to access jwt token and verify if user is loged in
+	 * @return ResponseEntity containing a message of the HTTP status code
+	 * @throws ResponseStatusException if user were not found 
+	 */
 
 	@PostMapping("/create-post")
-	public ResponseEntity<String> insertData(@RequestBody PostDAO post) {
+	public ResponseEntity<String> insertData(@RequestBody PostDAO post, HttpRequest request) {
 		try {
-			UUID userId = this.userService.getCurrentUserId();
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			
-			try {
-				Optional<User> searchUser = userRepository.findById(userId);
-				
-				if (searchUser.isPresent()) {
-					User user = searchUser.get();
-					Post newPost = new Post(user, post.greetings(), post.content(), post.reign(), post.language());
-					this.postRepository.save(newPost);
-					
-					return ResponseEntity.status(HttpStatus.OK).body("Data was successful inserted");
-				} else {
-					return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-				}
-			} catch(Exception e) {
-				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating post");
+			if (this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authorized user");
 			}
 			
+			String email = this.jwtService.extractEmail(token);
+			
+			UUID userId = this.userService.getCurrentUserId(email);
+			
+			this.postService.createPost(post, userId);
+			return ResponseEntity.status(HttpStatus.OK).body("Data was successful inserted");
+			
+		} catch (ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.error("User not found");
+			return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
 		} catch (Exception e) {
 			e.printStackTrace();
-			this.log.error("Error sending post");
+			this.log.error("Unknow error sending post");
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error creating post");
 		}
 	}

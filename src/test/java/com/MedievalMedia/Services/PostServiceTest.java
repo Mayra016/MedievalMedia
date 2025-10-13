@@ -36,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Enums.Language;
+import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.UpdatePostDAO;
 import com.MedievalMedia.Records.UpdatedPostResponse;
@@ -68,6 +69,28 @@ public class PostServiceTest {
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void createPostOK() {
+    	PostDAO post = new PostDAO("Greeting Creation", "", "", Language.DEUTSCH);
+    	this.postService.createPost(post, user.getId());
+    	
+    	Post savedPost = this.postRepository.findByGreetings("Greeting Creation");
+    	
+    	assertEquals(savedPost.getGreetings(), "Greeting Creation");
+    }
+    
+    @Test
+    void createPostUserNotFoundError() {
+    	PostDAO post = new PostDAO("Greeting Creation", "", "", Language.DEUTSCH);
+
+    	ResponseStatusException exception = assertThrows(
+    			ResponseStatusException.class,
+    	        () -> this.postService.createPost(post, UUID.randomUUID())
+    	);
+    	
+    	assertEquals(exception.getStatusCode(), HttpStatus.NOT_FOUND);
     }
     
     @Test
