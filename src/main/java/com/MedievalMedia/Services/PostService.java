@@ -358,14 +358,13 @@ public class PostService {
 		return posts;
 	}
 
-
-	public void addAnswer(Post post, String email) throws ResponseStatusException {
-		// Verify if the authenticated user match the post creator
-		if (!post.getCreator().getEmail().equals(email)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Just authenticated creators can post");
-		}
+	public void addAnswer(Post post, String email, long parentPostId) throws ResponseStatusException {
+		User creator = this.userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		Post parentPost = this.postRepository.findById(parentPostId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent post not found"));
+		
+		post.setCreator(creator);
+		post.setParent(parentPost);
 		
 		this.postRepository.save(post);
-		
 	}
 }

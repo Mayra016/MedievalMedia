@@ -211,8 +211,17 @@ public class PostController {
 		}
 	}
 	
-	@PostMapping("/add-answer")
-	public ResponseEntity<String> addNewAnswer(@RequestBody Post post, HttpRequest request) {
+	/**
+	 * Add an answer to a post
+	 *
+	 * @param post The answer post
+	 * @param request The HTTP request containing headers to verify the JWT token
+	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts
+	 * @throws ResponseStatusException if posts were not found 
+	 */
+	
+	@PostMapping("/add-answer/${parentPostId}")
+	public ResponseEntity<String> addNewAnswer(@RequestBody Post post, @RequestParam long parentPostId, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			
@@ -222,7 +231,7 @@ public class PostController {
 			
 			String email = this.jwtService.extractEmail(token);
 			
-			this.postService.addAnswer(post, email);
+			this.postService.addAnswer(post, email, parentPostId);
 			
 			return ResponseEntity.status(HttpStatus.OK).body("Success adding answer");
 			
