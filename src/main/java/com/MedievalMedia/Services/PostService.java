@@ -357,4 +357,24 @@ public class PostService {
 		
 		return posts;
 	}
+	
+	/**
+	 * Add an answer to a post
+	 *
+	 * @param post The answer post
+	 * @param email The email of the post creator
+	 * @param parentPostId The id of the parent post
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if parent post or creator user were not found
+	 */
+
+	public void addAnswer(Post post, String email, long parentPostId) throws ResponseStatusException {
+		User creator = this.userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		Post parentPost = this.postRepository.findById(parentPostId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent post not found"));
+		
+		post.setCreator(creator);
+		post.setParent(parentPost);
+		
+		this.postRepository.save(post);
+	}
 }

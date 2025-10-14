@@ -2,6 +2,7 @@ package com.MedievalMedia.Services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +70,38 @@ public class PostServiceTest {
         	post.setDate(LocalDate.now().minusDays(200-i));
             postRepository.save(post);
         }
+    }
+    
+    @Test
+    void addAnswerOK() {
+    	Post parent = this.postRepository.findByGreetings("Greeting 5");
+    	assertNotNull(parent, "Parent Post should have been saved");
+    	
+    	Post newPost = new Post();
+    	newPost.setGreetings("Answer Post");
+    	newPost.setParent(parent);
+    	newPost.setCreator(user);
+    	this.postService.addAnswer(newPost, user.getEmail());
+    	Post saved = this.postRepository.findByGreetings("Answer Post");
+    	
+    	assertNotNull(saved, "Answer Post should have been saved");
+    	assertTrue(saved.getGreetings().equals("Answer Post"));
+    	assertEquals(saved.getParent(), parent);
+    }
+    
+    @Test
+    void addAnswerUnauthorizedCreator() {
+    	Post newPost = new Post();
+    	newPost.setGreetings("Answer Post");
+    	newPost.setCreator(user);
+
+    	ResponseStatusException exception = assertThrows(
+    			ResponseStatusException.class,
+    			() -> this.postService.addAnswer(newPost, "fakeUserToken@email.com")
+        );
+    	
+    	assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
+
     }
     
     @Test
