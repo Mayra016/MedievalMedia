@@ -334,15 +334,25 @@ public class PostService {
 		this.postRepository.save(newPost);		
 	}
 
+	/**
+	 * Get posts from an user
+	 *
+	 * @param userId The user id of the post's creator
+	 * @param lastPostId The id of the last post loaded in case of user had already scrolled all previous loaded posts
+	 * @return List<Post> a list with the posts.
+	 * @throws ResponseStatusException if posts were not found 
+	 */
 
-	public List<Post> getUserPosts(UUID currentUserId, long lastPostId) {
+	public List<Post> getUserPosts(UUID userId, long lastPostId) {
 		List<Post> posts = new ArrayList<>();
 		
 		if (lastPostId != -404) {
+			// load older posts while scrolling down
 			Post lastPost = this.postRepository.findById(lastPostId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Latest post not found"));
-			posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDescByUser(lastPost.getDate(), lastPostId, PageRequest.of(0, 50), currentUserId);
+			posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDescByUser(lastPost.getDate(), lastPostId, PageRequest.of(0, 50), userId);
 		} else {
-			posts = this.postRepository.findLastFifthyFromUser(PageRequest.of(0, 50), currentUserId);
+			// first page load request
+			posts = this.postRepository.findLastFifthyFromUser(PageRequest.of(0, 50), userId);
 		}
 		
 		return posts;

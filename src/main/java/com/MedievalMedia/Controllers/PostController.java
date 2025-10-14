@@ -313,11 +313,21 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Get posts from an user
+	 *
+	 * @param userId The user id of the request post's creator
+	 * @param lastPostId The id of the last post loaded in case of user had already scrolled all previous loaded posts
+	 * @param request The http request to access jwt token and verify if user is loged in
+	 * @return ResponseEntity containing a message of the HTTP status code and a list with the posts
+	 * @throws ResponseStatusException if posts were not found 
+	 */
+	
 	@GetMapping("/get-user-posts")
 	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
-			
+
 			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
@@ -331,12 +341,10 @@ public class PostController {
 			
 			
 		} catch (ResponseStatusException e) {
-			e.printStackTrace();
-			this.log.error("Posts not found");
+			this.log.error("Posts not found ", e);
 			return ResponseEntity.status(e.getStatusCode()).body(List.of(new Post()));
 		} catch (Exception e) {
-			e.printStackTrace();
-			this.log.error("Error getting posts data");
+			this.log.error("Error getting posts data", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
 		}
 	}
