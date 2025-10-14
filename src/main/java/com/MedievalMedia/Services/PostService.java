@@ -1,5 +1,6 @@
 package com.MedievalMedia.Services;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -331,5 +332,19 @@ public class PostService {
 		User creator = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		Post newPost = new Post (creator, post.greetings(), post.content(), post.reign(), post.language());
 		this.postRepository.save(newPost);		
+	}
+
+
+	public List<Post> getUserPosts(UUID currentUserId, long lastPostId) {
+		List<Post> posts = new ArrayList<>();
+		
+		if (lastPostId != -404) {
+			Post lastPost = this.postRepository.findById(lastPostId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Latest post not found"));
+			posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDescByUser(lastPost.getDate(), lastPostId, PageRequest.of(0, 50), currentUserId);
+		} else {
+			posts = this.postRepository.findLastFifthyFromUser(PageRequest.of(0, 50), currentUserId);
+		}
+		
+		return posts;
 	}
 }

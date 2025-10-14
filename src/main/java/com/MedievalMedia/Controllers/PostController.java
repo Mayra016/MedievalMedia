@@ -167,7 +167,7 @@ public class PostController {
 	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			String email = this.jwtService.extractEmail(token);
@@ -222,7 +222,7 @@ public class PostController {
 	public ResponseEntity<List<Post>> getLastPostsGlobaly(Post post, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non authorized user");
 			}
 			String email = this.jwtService.extractEmail(token);
@@ -256,7 +256,7 @@ public class PostController {
 	public ResponseEntity<List<Post>> getLastPostsByReign(@RequestParam String reign, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorize").toString().replace("Bearer: ", "");
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			
@@ -291,7 +291,7 @@ public class PostController {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authorized user");
 			}
 			
@@ -314,17 +314,26 @@ public class PostController {
 	}
 	
 	@GetMapping("/get-user-posts")
-	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId) {
+	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
 		try {
-			Optional<User> searchUser = this.userRepository.findById(userId);
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			
-			if (searchUser.isPresent()) {
-				List<Post> userPosts = this.postRepository.findAllByCreator(searchUser.get());
-				return ResponseEntity.status(HttpStatus.OK).body(userPosts);
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(new Post()));
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			
+			String email = this.jwtService.extractEmail(token);
+			
+			List<Post> posts = this.postService.getUserPosts(this.userService.getCurrentUserId(email), lastPostId);
+		
+			
+			return ResponseEntity.status(HttpStatus.OK).body(posts);
+			
+			
+		} catch (ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.error("Posts not found");
+			return ResponseEntity.status(e.getStatusCode()).body(List.of(new Post()));
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting posts data");
