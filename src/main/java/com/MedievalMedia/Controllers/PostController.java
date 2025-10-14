@@ -215,9 +215,10 @@ public class PostController {
 	 * Add an answer to a post
 	 *
 	 * @param post The answer post
+	 * @param parentPostId The id of the parent post
 	 * @param request The HTTP request containing headers to verify the JWT token
 	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts
-	 * @throws ResponseStatusException if posts were not found 
+	 * @throws ResponseStatusException if parent post or creator user were not found
 	 */
 	
 	@PostMapping("/add-answer/${parentPostId}")
