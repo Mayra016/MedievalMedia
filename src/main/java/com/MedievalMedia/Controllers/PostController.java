@@ -27,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
+import com.MedievalMedia.Enums.Interactions;
 import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.PostsResponse;
 import com.MedievalMedia.Records.UpdatePostDAO;
@@ -207,6 +208,32 @@ public class PostController {
 			this.log.error("Error getting post answers");
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
+		}
+	}
+	
+	@PostMapping("/add-answer")
+	public ResponseEntity<String> addNewAnswer(@RequestBody Post post, HttpRequest request) {
+		try {
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized user");
+			}
+			
+			String email = this.jwtService.extractEmail(token);
+			
+			this.postService.addAnswer(post, email);
+			
+			return ResponseEntity.status(HttpStatus.OK).body("Success adding answer");
+			
+		} catch(ResponseStatusException e) {
+			this.log.error(e.getReason(), " ", e);
+			
+			return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+		} catch(Exception e) {
+			this.log.error("Unknow error adding answer to post", " ", e);
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error adding answer");
 		}
 	}
 	

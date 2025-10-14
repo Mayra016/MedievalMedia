@@ -357,4 +357,15 @@ public class PostService {
 		
 		return posts;
 	}
+
+
+	public void addAnswer(Post post, String email) throws ResponseStatusException {
+		// Verify if the authenticated user match the post creator
+		if (!post.getCreator().getEmail().equals(email)) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Just authenticated creators can post");
+		}
+		
+		this.postRepository.save(post);
+		
+	}
 }

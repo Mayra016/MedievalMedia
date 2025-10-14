@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import com.MedievalMedia.Entities.Post;
 import com.MedievalMedia.Entities.User;
@@ -42,6 +43,13 @@ public interface PostRepository extends JpaRepository<Post, Long>{
 
 	@Query("SELECT p.id FROM Post p ORDER BY p.date DESC")
 	List<Long> findLastPostId(Pageable pageable);
+
+	@Query("SELECT p FROM Post p WHERE p.creator.id = :userId ORDER BY p.date DESC")
+	List<Post> findLastFifthyFromUser(Pageable pageable, @Param("userId") UUID currentUserId);
+
+	@Query("SELECT p FROM Post p WHERE p.creator.id = :userId AND (p.date < :date OR (p.date = :date AND p.id < :lastId)) ORDER BY p.date DESC, p.id DESC")
+	List<Post> findTop50ByDateLessThanOrderByCreatedAtDescByUser(@Param("date") LocalDate date, @Param("lastId") long lastPostId, Pageable pageable,
+			@Param("userId") UUID currentUserId);
 
 
 }
