@@ -167,7 +167,7 @@ public class PostController {
 	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			String email = this.jwtService.extractEmail(token);
@@ -222,7 +222,7 @@ public class PostController {
 	public ResponseEntity<List<Post>> getLastPostsGlobaly(Post post, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non authorized user");
 			}
 			String email = this.jwtService.extractEmail(token);
@@ -256,7 +256,7 @@ public class PostController {
 	public ResponseEntity<List<Post>> getLastPostsByReign(@RequestParam String reign, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorize").toString().replace("Bearer: ", "");
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			
@@ -291,7 +291,7 @@ public class PostController {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			
-			if (this.jwtService.validateToken(token)) {
+			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authorized user");
 			}
 			
@@ -313,21 +313,38 @@ public class PostController {
 		}
 	}
 	
+	/**
+	 * Get posts from an user
+	 *
+	 * @param userId The user id of the request post's creator
+	 * @param lastPostId The id of the last post loaded in case of user had already scrolled all previous loaded posts
+	 * @param request The http request to access jwt token and verify if user is loged in
+	 * @return ResponseEntity containing a message of the HTTP status code and a list with the posts
+	 * @throws ResponseStatusException if posts were not found 
+	 */
+	
 	@GetMapping("/get-user-posts")
-	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId) {
+	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
 		try {
-			Optional<User> searchUser = this.userRepository.findById(userId);
-			
-			if (searchUser.isPresent()) {
-				List<Post> userPosts = this.postRepository.findAllByCreator(searchUser.get());
-				return ResponseEntity.status(HttpStatus.OK).body(userPosts);
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(new Post()));
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			
+			String email = this.jwtService.extractEmail(token);
+			
+			List<Post> posts = this.postService.getUserPosts(this.userService.getCurrentUserId(email), lastPostId);
+		
+			
+			return ResponseEntity.status(HttpStatus.OK).body(posts);
+			
+			
+		} catch (ResponseStatusException e) {
+			this.log.error("Posts not found ", e);
+			return ResponseEntity.status(e.getStatusCode()).body(List.of(new Post()));
 		} catch (Exception e) {
-			e.printStackTrace();
-			this.log.error("Error getting posts data");
+			this.log.error("Error getting posts data", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
 		}
 	}

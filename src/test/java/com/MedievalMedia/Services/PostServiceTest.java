@@ -72,6 +72,24 @@ public class PostServiceTest {
     }
     
     @Test
+    void getUserPostsFirstLoadOK() {
+    	List<Post> posts = this.postService.getUserPosts(user.getId(), (long) -404);
+
+    	assertEquals(posts.size(), 50);
+    	assertEquals(posts.get(0).getGreetings(), "Greeting 60");
+    	
+    }
+    
+    @Test
+    void getUserPostsScrollingOK() {
+    	Post latestPost = this.postRepository.findByGreetings("Greeting 50");
+    	List<Post> posts = this.postService.getUserPosts(user.getId(), latestPost.getId());
+    	assertEquals(posts.size(), 50);
+    	assertEquals(posts.get(0).getGreetings(), "Greeting 49");
+    	
+    }
+    
+    @Test
     void createPostOK() {
     	PostDAO post = new PostDAO("Greeting Creation", "", "", Language.DEUTSCH);
     	this.postService.createPost(post, user.getId());
