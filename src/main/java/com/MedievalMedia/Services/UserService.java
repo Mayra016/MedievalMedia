@@ -159,6 +159,14 @@ public class UserService implements UserDetailsService {
 		}
 	}
 
+	/**
+	 * Get user info
+	 *
+	 * @param userId The user id of the user the information must be retrieved
+	 * @return UserProfileInfoDAO with the user informations
+	 * @throws ResponseStatusException 
+	 * 	NOT_FOUND: if user not found
+	 */
 	public UserProfileInfoDAO getUserInfo(UUID userId) {
 		User user = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		UserProfileInfoDAO userInfo = new UserProfileInfoDAO(user.getId(), user.getUsername(), user.getTitles(), user.getReign(), user.getAppLanguage(), user.getBirthday());

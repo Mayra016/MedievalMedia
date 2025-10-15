@@ -69,6 +69,14 @@ public class UserRestAPI {
 		}
 	}
 	
+	/**
+	 * Get user info
+	 *
+	 * @param userId The user id of the user the information must be retrieved
+	 * @param request Access headers to verify jwt token
+	 * @return ResponseEntity with the petition status code and user informations
+	 * @throws ResponseStatusException if user not found
+	 */
 	@GetMapping("/get-user-info")
 	public ResponseEntity<UserProfileInfoDAO> getUserInfo(@RequestBody UUID userId, HttpRequest request) {
 		try {
