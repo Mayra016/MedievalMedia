@@ -6,19 +6,23 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Records.UserDAO;
+import com.MedievalMedia.Records.UserProfileInfoDAO;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.MedievalMedia.Services.JwtTokenService;
 import com.MedievalMedia.Services.UserService;
@@ -64,6 +68,39 @@ public class UserRestAPI {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(token);
 		}
 	}
+	
+	/**
+	 * Get user info
+	 *
+	 * @param userId The user id of the user the information must be retrieved
+	 * @param request Access headers to verify jwt token
+	 * @return ResponseEntity with the petition status code and user informations
+	 * @throws ResponseStatusException if user not found
+	 */
+	@GetMapping("/get-user-info")
+	public ResponseEntity<UserProfileInfoDAO> getUserInfo(@RequestBody UUID userId, HttpRequest request) {
+		try {
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			
+			if (!this.jwtTokenService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+			}
+			
+			UserProfileInfoDAO userInfo = this.userService.getUserInfo(userId);
+			
+			return ResponseEntity.status(HttpStatus.OK).body(userInfo);
+			
+		} catch (ResponseStatusException e) {
+			this.log.error("User not found ", e);
+			
+			return ResponseEntity.status(e.getStatusCode()).build();
+		} catch (Exception e) {
+			this.log.error("Unknow error getting user info ", e);
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+	
 
 	@PostMapping("/create")
 	public ResponseEntity<String> createUser(@RequestBody User user) {
