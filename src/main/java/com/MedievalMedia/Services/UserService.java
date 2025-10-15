@@ -1,5 +1,6 @@
 package com.MedievalMedia.Services;
 
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,8 +22,11 @@ import org.springframework.stereotype.Service;
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Enums.Language;
+import com.MedievalMedia.Records.PostDAO;
 import com.MedievalMedia.Records.UserDAO;
+import com.MedievalMedia.Records.UserProfileInfoDAO;
 import com.MedievalMedia.Repositories.UserRepository;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -41,10 +45,9 @@ public class UserService implements UserDetailsService {
 		this.emailService = emailService;
 	}
     
-    public UUID getCurrentUserId() {
-    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-		return (UUID) userDetails.getId();
+    public UUID getCurrentUserId(String email) {
+    	User user = this.userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		return user.getId();
     }
     
 	@Override
@@ -154,5 +157,11 @@ public class UserService implements UserDetailsService {
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sending email to change password");
 		}
+	}
+
+	public UserProfileInfoDAO getUserInfo(UUID userId) {
+		User user = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		UserProfileInfoDAO userInfo = new UserProfileInfoDAO(user.getId(), user.getUsername(), user.getTitles(), user.getReign(), user.getAppLanguage(), user.getBirthday());
+		return userInfo;
 	}
 }
