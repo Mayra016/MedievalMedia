@@ -25,7 +25,6 @@ import com.paypal.base.rest.PayPalRESTException;
 @RequestMapping("/paypal")
 public class PayPalRestController {
 	
-	private APIContext apiContext;
 	private PaypalService paypalService;
 	private Logger log = LoggerFactory.getLogger(PayPalRestController.class);
 	
