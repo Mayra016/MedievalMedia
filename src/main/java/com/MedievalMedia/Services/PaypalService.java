@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.MedievalMedia.Entities.User;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,47 +32,30 @@ import com.paypal.base.rest.PayPalRESTException;
 public class PaypalService {
 	@Value("${PAYPAL_CLIENT_ID}") private String clientId;
 	@Value("${PAYPAL_CLIENT_SECRET}") private String clientSecret;
-	@Value("${PAYPAL_MODE}") private String mode;
+	@Value("${paypal.mode}") private String mode;
+	@Value("${app.front-url}") private String frontUrl;
 	
-	private final APIContext apiContext;
+	private APIContext apiContext;
 	private Logger log = LoggerFactory.getLogger(PaypalService.class);
+
 	
-	// get authentication
-	public String getAccessToken() {
-	    try {
-	        String auth = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
-
-	        HttpRequest request = HttpRequest.newBuilder()
-	                .uri(URI.create("https://api-m.sandbox.paypal.com/v1/oauth2/token"))
-	                .header("Authorization", "Basic " + auth)
-	                .header("Content-Type", "application/x-www-form-urlencoded")
-	                .POST(HttpRequest.BodyPublishers.ofString("grant_type=client_credentials"))
-	                .build();
-
-	        HttpClient client = HttpClient.newHttpClient();
-	        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-	        System.out.println("Paypal response: " + response.body());
-
-	        ObjectMapper mapper = new ObjectMapper();
-	        JsonNode jsonNode = mapper.readTree(response.body());
-	        JsonNode tokenNode = jsonNode.get("access_token");
-
-	        if (tokenNode == null) {
-	            throw new RuntimeException("No access_token in Paypal response");
-	        }
-
-	        return tokenNode.asText();
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        this.log.error("Error getting Paypal access token: " + e.getMessage());
-	        return "";
-	    }
+	@Autowired
+	public PaypalService() {
+		this.apiContext = new APIContext(clientId, clientSecret, mode);
 	}
 
 	// generate payment
-	public Payment createPayment(Double total, String currency, String method, String intent, String description, String cancelUrl, String successUrl) 
+	public Payment createPayment(Double total, String currency, String method, String intent, String description) 
 	 throws PayPalRESTException {
+		this.apiContext = new APIContext(clientId, clientSecret, mode);
+		this.frontUrl = this.frontUrl == null ? "http://localhost:4200" : this.frontUrl;
+		String successUrl = UriComponentsBuilder.fromHttpUrl(frontUrl)
+				.path("success-payment")
+				.toUriString();
+		String cancelUrl = UriComponentsBuilder.fromHttpUrl(frontUrl)
+				.path("cancel-payment")
+				.toUriString();
+		
 		Amount amount = new Amount();
 		amount.setCurrency(currency);
 		amount.setTotal(String.format(Locale.forLanguageTag(currency), "%.2f", total));
