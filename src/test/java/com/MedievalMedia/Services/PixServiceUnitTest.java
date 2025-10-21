@@ -21,7 +21,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.MedievalMedia.Records.PixDAO;
+import com.MedievalMedia.Records.PixDTO;
 import com.MedievalMedia.Records.RecurrencyPix;
 import com.MedievalMedia.Repositories.PaymentRepository;
 
@@ -56,7 +56,7 @@ class PixServiceUnitTest {
 	
 	@Test
 	void createQRCodeOK() throws ResponseStatusException, URISyntaxException, IOException, InterruptedException {
-		PixDAO pix = new PixDAO(Map.of("subtipo", "IMEDIATO"), Map.of("original", "1"), "", Map.of("nome", "Username", "cnpj", ""), new RecurrencyPix(Map.of("contrato", "", "objeto", "Donation at Medieval Media"), Map.of("dataInicial", LocalDateTime.now().toString(), "dataFinal", LocalDateTime.now().toString()), "NAO_PERMITE"));
+		PixDTO pix = new PixDTO(Map.of("subtipo", "IMEDIATO"), Map.of("original", "1"), "", Map.of("nome", "Username", "cnpj", ""), new RecurrencyPix(Map.of("contrato", "", "objeto", "Donation at Medieval Media"), Map.of("dataInicial", LocalDateTime.now().toString(), "dataFinal", LocalDateTime.now().toString()), "NAO_PERMITE"));
 		
 		String link = this.service.createQRCode(pix, "payer", "finalUser", "coin");
 		
