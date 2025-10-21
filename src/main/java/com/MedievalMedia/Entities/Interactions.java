@@ -33,12 +33,27 @@ public class Interactions {
 	private HashMap<String, Float> reactions = new HashMap<>();
     @Transient
     private HashMap<String, Float> points = new HashMap<>();
-	
+    @Transient
+    private HashMap<String, String> coinPrices = new HashMap<>();
+    @Transient
+    private HashMap<String, String> crownPrices = new HashMap<>();
+    
 	private float score = 0;
 	
 	public Interactions() {
 		this.initializeReactions();
 		this.initializePoints();
+		this.initializePrices();
+	}
+	
+	private void initializePrices() {
+		this.coinPrices.put("dolar", "1");
+		this.coinPrices.put("euro", "1");
+		this.coinPrices.put("reais", "5");
+		
+		this.crownPrices.put("dolar", "5");
+		this.crownPrices.put("euro", "5");
+		this.crownPrices.put("reais", "25");
 	}
 	
 	private void initializeReactions() {
