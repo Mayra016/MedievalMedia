@@ -286,10 +286,15 @@ public class PixService {
 	 *  Update withdraw status after the requested withdraw were completed
 	 *  
 	 *  @param paymentId The id of the payment that has been successfully withdrawn
+	 *  @throws BAD_REQUEST: if paymentIds is empty
 	 */
 	
-	public void updateWithdraw(List<String> paymentId) {
-		List<Payment> payments = this.paymentRepository.findAllById(paymentId);
+	public void updateWithdraw(List<String> paymentIds) {
+		if (paymentIds.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid data");
+		}
+		
+		List<Payment> payments = this.paymentRepository.findAllByIdAndStatus(paymentIds, Status.WITHDRAW_REQUESTED);
 		
 		for (Payment payment : payments) {
 			payment.setStatus(Status.WITHDRAW_COMPLETED);
