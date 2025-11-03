@@ -8,6 +8,8 @@ public enum Status {
 	APPROVED,
 	CANCELED,
 	FAILED,
+	WITHDRAW_REQUESTED,
+	WITHDRAW_COMPLETED,
 	COMPLETED;
 	
 	@JsonCreator
@@ -23,6 +25,10 @@ public enum Status {
                 return FAILED;
             case "COMPLETED":
                 return COMPLETED;
+            case "WITHDRAW_REQUESTED":
+                return WITHDRAW_REQUESTED;
+            case "WITHDRAW_COMPLETED":
+                return WITHDRAW_COMPLETED;
             default:
                 throw new IllegalArgumentException("Unknown value: " + value);
         }

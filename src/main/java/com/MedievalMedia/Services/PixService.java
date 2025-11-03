@@ -223,14 +223,18 @@ public class PixService {
 	*   
 	* @return acess_token
 	*/
-	private String authenticate() throws URISyntaxException, IOException, InterruptedException {
+	protected String authenticate() throws URISyntaxException, IOException, InterruptedException {
+		this.itauPixClientId = "158dcd69-ce76-371c-b2ec-30fd350c2f00";
+		this.itauPixClientSecret = "ce880472-d697-49fe-b634-e9ff33a775e9";
+		
 		String form = "grant_type=client_credentials"
                 + "&client_id=" + URLEncoder.encode(this.itauPixClientId, StandardCharsets.UTF_8)
                 + "&client_secret=" + URLEncoder.encode(this.itauPixClientSecret, StandardCharsets.UTF_8);
 
-		
+		String urlSandbox = "https://api.itau.com.br/sandbox/api/oauth/token";
+		String urlProduction = "https://oauthd.itau/identity/connect/token";
 		HttpRequest request = HttpRequest.newBuilder()
-				.uri(new URI("https://oauthd.itau/identity/connect/token"))
+				.uri(new URI(urlSandbox))
 				.headers("Content-Type", "application/x-www-form-urlencoded")
 				.POST(HttpRequest.BodyPublishers.ofString(form)) 
                 .build();
@@ -239,7 +243,6 @@ public class PixService {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         
         if (response.statusCode() == 200 || response.statusCode() == 201) {
-			// verify link
 			ObjectMapper mapper = new ObjectMapper();
 	        JsonNode root = mapper.readTree(response.body());
 	        
@@ -250,5 +253,31 @@ public class PixService {
         	throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
         }
 	}
-
+	
+	/*
+	*   Withdraw payment using Pix
+	*   
+	*   @param userId the id of the user that reqested the withdraw
+	*   @param value The total value of the transaction
+	*   @param key The pix key of the user
+	*   @throws NOT_FOUND if the user who requested the transaction
+	*/
+	
+	public void withdrawPayment(UUID userId, BigDecimal value, String key) {
+		User user = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		
+		if (user.getMoney().compareTo(value) < 0) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You haven't enough money");
+		}
+		
+		Payment payment = new Payment();
+		payment.setId(UUID.randomUUID().toString());
+		payment.setDate(LocalDateTime.now().toString());
+		payment.setId_final_user(userId.toString());
+		payment.setId_payer("MEDIEVAL_MEDIA");
+		payment.setStatus(Status.WITHDRAW_REQUESTED);
+		payment.setTotal(value);
+		
+		this.paymentRepository.save(payment);
+	}
 }
