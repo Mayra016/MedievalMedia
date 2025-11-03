@@ -1,5 +1,6 @@
 package com.MedievalMedia.Entities;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ public class User {
 	private LocalDate enterDate;
 	private String country;
 	private String[] titles = new String[1];
+	private BigDecimal money;
 	@ManyToMany
 	@JoinTable(
 	    name = "user_follows",
