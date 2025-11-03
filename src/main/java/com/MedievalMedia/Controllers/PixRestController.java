@@ -124,7 +124,7 @@ public class PixRestController {
 		} catch(Exception e) {
 			this.log.error("Unknow error updating withdraw status: "  + e);
 			
-			return ResponseEntity.s
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error while updating withdraws");
 		}
 	}
 }
