@@ -278,6 +278,25 @@ public class PixService {
 		payment.setStatus(Status.WITHDRAW_REQUESTED);
 		payment.setTotal(value);
 		
+		user.setMoney(user.getMoney().min(value));
+		
 		this.paymentRepository.save(payment);
+		this.userRepository.save(user);
+	}
+	
+	/*
+	 *  Update withdraw status after the requested withdraw were completed
+	 *  
+	 *  @param paymentId The id of the payment which was withdrawed
+	 */
+	
+	public void updateWithdraw(List<String> paymentId) {
+		List<Payment> payments = this.paymentRepository.findAllById(paymentId);
+		
+		for (Payment payment : payments) {
+			payment.setStatus(Status.WITHDRAW_COMPLETED);
+		}
+				
+		this.paymentRepository.saveAll(payments);
 	}
 }
