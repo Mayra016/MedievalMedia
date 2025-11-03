@@ -4,19 +4,27 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublisher;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -40,6 +48,10 @@ public class PixService {
 	@Value("${PIX_BASE_URL}") private String pixUrl;
 	@Value("${PIX_TOKEN}") private String token;
 	@Value("${PIX_RECEIVER}") private String receiverKey;
+	@Value("${ITAU_API_TOKEN}") private String itauApiToken;
+	@Value("${PIX_URL_ITAU}") private String apiPixRecebimentos;
+	@Value("${ITAU_PIX_CLIENT_ID}") private String itauPixClientId;
+	@Value("${ITAU_PIX_CLIENT_SECRET}") private String itauPixClientSecret;
 	
 	private Interactions interactions = new Interactions();
 	private Logger log = LoggerFactory.getLogger(PixService.class);
@@ -107,6 +119,7 @@ public class PixService {
 	        JsonNode root = mapper.readTree(response.body());
 	        
 	        String link = root.path("data").path("emv").asText();
+	        paymentId = root.path("txid").asText();	
 	        
 	        if (link != "") {
 	        	// save payment in database
@@ -132,6 +145,110 @@ public class PixService {
 		}
 		       
 		return "";
+	}
+	
+	/**
+	 * Verify pendant payments in data base and verify its status in paypal
+	 * 
+	 * @throws URISyntaxException 
+	 * @throws NOT_FOUND If the PIX API URL is invalid
+	 * @throws IOException If the HTTP request to the PIX API fails
+	 * @throws InterruptedException If the HTTP request is interrupted
+	 * @throws ResponseStatusException If payment generation fails or business rules are violated
+
+	 * Itaú API Docs: https://devportal.itau.com.br/nossas-apis/itau-ep9-gtw-pix-recebimentos-ext-v2?tab=especificacaoTecnica#operation/get/cob/{txid}
+	 */
+	@Scheduled(fixedDelay = 86400000)
+	public void verifyPendantPayments() throws URISyntaxException, IOException, InterruptedException {
+		
+		List<Payment> payments = this.paymentRepository.findByStatus(Status.PENDANT);
+		Set<Payment> toDelete = new HashSet<>();
+		String acess_token = this.authenticate();
+		
+		for (Payment payment : payments) {
+			// call api at /cob/{idSolicRec} endpoint to get payment status and update payment status  
+			HttpRequest request = HttpRequest.newBuilder()
+					  .uri(new URI(this.apiPixRecebimentos + "/cob/" + payment.getId()))
+					  .headers("Content-Type", "application/json", "Authorization", "Bearer " + acess_token,
+						        "x-itau-correlationID", UUID.randomUUID().toString(), "x-itau-apikey", this.itauPixClientId)
+					  .GET()
+					  .build();
+
+			HttpClient client = HttpClient.newHttpClient();
+			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+			
+			ObjectMapper mapper = new ObjectMapper();
+	        JsonNode root = mapper.readTree(response.body());
+	        
+	        String link = root.path("status").asText();
+			
+	        if (link.equals("APROVADA")) {
+	        	payment.setStatus(Status.APPROVED);
+	        	this.paymentRepository.save(payment);
+	        }
+	        
+	        if (link.equals("COMPLETADA")) {
+	        	payment.setStatus(Status.COMPLETED);
+	        	this.paymentRepository.save(payment);
+	        }
+			
+			User finalUser = new User();
+						
+			if (payment.getStatus() == Status.COMPLETED) {
+				// update payment status in data base
+				Optional<User> searchUser = this.userRepository.findById(UUID.fromString(payment.getId_final_user()));
+				
+				if (searchUser.isPresent()) {
+				    finalUser = searchUser.get();
+				    finalUser.setMoney(finalUser.getMoney().add(payment.getTotal().min((payment.getTotal().multiply(BigDecimal.valueOf(0.5))))));	
+				    
+				    this.userRepository.save(finalUser);
+				}
+				
+				
+			} else {
+				if (payment.getStatus() == Status.PENDANT && LocalDateTime.now().minusDays(3).isAfter(LocalDateTime.parse(payment.getDate()))) {
+					toDelete.add(payment);
+				}
+				
+			}	
+		}
+		
+		this.paymentRepository.deleteAll(toDelete);
+	
+	}
+	
+	/*
+	*   Authenticate
+	*   
+	* @return acess_token
+	*/
+	private String authenticate() throws URISyntaxException, IOException, InterruptedException {
+		String form = "grant_type=client_credentials"
+                + "&client_id=" + URLEncoder.encode(this.itauPixClientId, StandardCharsets.UTF_8)
+                + "&client_secret=" + URLEncoder.encode(this.itauPixClientSecret, StandardCharsets.UTF_8);
+
+		
+		HttpRequest request = HttpRequest.newBuilder()
+				.uri(new URI("https://oauthd.itau/identity/connect/token"))
+				.headers("Content-Type", "application/x-www-form-urlencoded")
+				.POST(HttpRequest.BodyPublishers.ofString(form)) 
+                .build();
+		
+		HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() == 200 || response.statusCode() == 201) {
+			// verify link
+			ObjectMapper mapper = new ObjectMapper();
+	        JsonNode root = mapper.readTree(response.body());
+	        
+	        String token = root.path("access_token").asText();
+	        
+	        return token;
+        } else {
+        	throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
+        }
 	}
 
 }
