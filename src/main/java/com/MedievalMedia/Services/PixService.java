@@ -254,10 +254,10 @@ public class PixService {
         }
 	}
 	
-	/*
+	/**
 	*   Withdraw payment using Pix
 	*   
-	*   @param userId the id of the user that reqested the withdraw
+	*   @param userId the id of the user that requested the withdraw
 	*   @param value The total value of the transaction
 	*   @param key The pix key of the user
 	*   @throws NOT_FOUND if the user who requested the transaction
@@ -284,10 +284,10 @@ public class PixService {
 		this.userRepository.save(user);
 	}
 	
-	/*
+	/**
 	 *  Update withdraw status after the requested withdraw were completed
 	 *  
-	 *  @param paymentId The id of the payment which was withdrawed
+	 *  @param paymentId The id of the payment that has been successfully withdrawn
 	 */
 	
 	public void updateWithdraw(List<String> paymentId) {

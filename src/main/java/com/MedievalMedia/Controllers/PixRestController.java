@@ -1,5 +1,7 @@
 package com.MedievalMedia.Controllers;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpRequest;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.MedievalMedia.Records.PixRequestDTO;
+import com.MedievalMedia.Records.WithdrawDTO;
 import com.MedievalMedia.Repositories.PaymentRepository;
 import com.MedievalMedia.Repositories.UserRepository;
 import com.MedievalMedia.Services.JwtTokenService;
@@ -63,6 +66,55 @@ public class PixRestController {
 			this.log.error("Unknow error creating pix qr code payment " + e);
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error creating pix qr code payment");
+		}
+	}
+	
+	/**
+	* Request a withdraw
+    * 
+	* @param transaction An WithdrawDTO record containing the user id, the money, and the pix key 
+	* @return ResponseEntity The response containing the http response code and a status message
+	* @throws ResponseStatusResponse containing the status code and a message
+	*/
+	@PostMapping("/withdraw")
+	public ResponseEntity<String> withdraw(@RequestBody WithdrawDTO transaction) {
+		try {
+			this.pixService.withdrawPayment(transaction.userId(), transaction.money(), transaction.pixKey());
+			
+			return ResponseEntity.status(HttpStatus.OK).body("Success withdrawing payment with pix");
+		} catch (ResponseStatusException e) {
+			this.log.error("Error withdrawing payment with pix: " + e);
+			
+			return ResponseEntity.status(e.getStatusCode()).body("Error withdrawing payment with pix");
+		}
+		catch (Exception e) {
+			this.log.error("Unknow error withdrawing payment with pix: " + e);
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error withdrawing payment with pix");
+		}
+	}
+	
+	@PostMapping("/update-withdraw")
+	public ResponseEntity<String> updateWithdraw(@RequestBody List<String> paymentIds, HttpRequest request) {
+		try {
+			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+			
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized user");
+			}
+	
+			if (!this.jwtService.verifyOwnership(token)) {
+				return ResponseEntity.status(HttpStatus.CONFLICT).body("Invalid request");
+			}
+			
+			this.pixService.updateWithdraw(paymentIds);
+			
+			return ResponseEntity.status(HttpStatus.OK).body("Payments were successful updated");
+			
+		} catch(Exception e) {
+			this.log.error("Unknow error updating withdraw status: "  + e);
+			
+			return ResponseEntity.s
 		}
 	}
 }
