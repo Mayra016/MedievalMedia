@@ -8,6 +8,7 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.JwtParser;
@@ -20,6 +21,8 @@ public class JwtTokenService {
 
 	private final static SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 	private final static long EXPIRATION_TIME = 259200000; // 3 days
+	
+	@Value("${VALID_EMAIL}") private String validEmail;
 	
 	public static String generateToken(String email) {
 		return Jwts.builder()
@@ -66,5 +69,15 @@ public class JwtTokenService {
 		return jwtParser.parseClaimsJws(token)
 				.getBody()
 				.getSubject();
+	}
+
+	public boolean verifyOwnership(String token) {
+		String email = this.extractEmail(token);
+		
+		if (email.equals(validEmail)) {
+			return true;
+		}
+		
+		return false;
 	}
 }
