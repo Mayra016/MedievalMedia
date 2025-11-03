@@ -224,9 +224,7 @@ public class PixService {
 	* @return acess_token
 	*/
 	protected String authenticate() throws URISyntaxException, IOException, InterruptedException {
-		this.itauPixClientId = "158dcd69-ce76-371c-b2ec-30fd350c2f00";
-		this.itauPixClientSecret = "ce880472-d697-49fe-b634-e9ff33a775e9";
-		
+
 		String form = "grant_type=client_credentials"
                 + "&client_id=" + URLEncoder.encode(this.itauPixClientId, StandardCharsets.UTF_8)
                 + "&client_secret=" + URLEncoder.encode(this.itauPixClientSecret, StandardCharsets.UTF_8);
