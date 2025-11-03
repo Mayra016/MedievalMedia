@@ -94,6 +94,16 @@ public class PixRestController {
 		}
 	}
 	
+	/**
+	 *  Update payment status after withdraw
+	 *  
+	 *  @param paymentIds The ids of the payment whose status must be updated
+	 *  @param request Headers to verify user
+	 *  @return ResponseEntity with the status code of the response and a message. 
+	 *  	OK: if payments were successful withdrawn
+	 *  	UNAUTHORIZED: if the user is not authorized
+	 *  	CONFLICT: if the user is not allowed to do this request
+	 */
 	@PostMapping("/update-withdraw")
 	public ResponseEntity<String> updateWithdraw(@RequestBody List<String> paymentIds, HttpRequest request) {
 		try {
