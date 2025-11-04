@@ -1,17 +1,33 @@
 package com.MedievalMedia.Services;
 
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.MedievalMedia.Entities.User;
+import com.MedievalMedia.Records.PayPalWithdrawDTO;
+import com.MedievalMedia.Repositories.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.paypal.api.payments.Amount;
 import com.paypal.api.payments.Payer;
 import com.paypal.api.payments.Payment;
@@ -25,16 +41,36 @@ import com.paypal.base.rest.PayPalRESTException;
 public class PaypalService {
 	@Value("${PAYPAL_CLIENT_ID}") private String clientId;
 	@Value("${PAYPAL_CLIENT_SECRET}") private String clientSecret;
-	@Value("${paypal.mode}") private String mode;
+	@Value("${PAYPAL_MODE}") private String mode;
 	@Value("${app.front-url}") private String frontUrl;
+	@Value("${paypal.withdraw.url}") String withdrawUrl;
+	@Value("${paypal.balance.url}") String balanceUrl;
+	@Value("${paypal.auth.url}") String authUrl;
+	
 	
 	private APIContext apiContext;
-	private Logger log = LoggerFactory.getLogger(PaypalService.class);
+	private UserRepository userRepository;
+	private PaymentService paymentService;
 
 	
 	@Autowired
-	public PaypalService() {
+	public PaypalService(UserRepository userRepository) {
 		this.apiContext = new APIContext(clientId, clientSecret, mode);
+		this.userRepository = userRepository;
+	}
+	
+
+	public PaypalService(UserRepository userRepository, String clientId, String clientSecret, String mode, PaymentService paymentService, String withdrawUrl,
+						String balanceUrl, String authUrl) {
+		this.clientId = clientId;
+		this.clientSecret = clientSecret;
+		this.mode = mode;
+		this.withdrawUrl = withdrawUrl;
+		this.balanceUrl = balanceUrl;
+		this.authUrl = authUrl;
+		this.apiContext = new APIContext(clientId, clientSecret, mode);
+		this.userRepository = userRepository;
+		this.paymentService = paymentService;
 	}
 
 	/**
@@ -108,6 +144,145 @@ public class PaypalService {
 		execution.setPayerId(payerId);
 		
 		return payment.execute(this.apiContext, execution);	
+	}
+	
+	/**
+	 * Currency codes: https://developer.paypal.com/api/rest/reference/currency-codes/
+	 * 
+	 * @param userId
+	 * @param value
+	 * @param userPaypalId
+	 * @param currencyCode
+	 * @throws ResponseStatusException
+	 * @throws URISyntaxException 
+	 * @throws InterruptedException 
+	 * @throws IOException 
+	 */
+	public void withdrawPayment(UUID userId, BigDecimal value, String userPaypalId, String currencyCode) throws ResponseStatusException, URISyntaxException, IOException, InterruptedException {
+
+		User user = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+	
+		if (user.getMoney().compareTo(value) < 0) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "User doesn't have enough money");
+		}
+		
+		if (value.compareTo(BigDecimal.valueOf(10)) < 0) {
+			throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Withdraws lesser than $10.00 are not allowed");
+		}
+		
+		String token = this.authenticate();
+		
+		// check if medieval media paypal account has enough balance to fulfill the transaction
+		this.verifyBalance(value, token, currencyCode);
+		
+		String paymentId = this.paymentService.createInternalPayment(userPaypalId, value);
+		
+		// create object with payment information to match Paypal API requirements
+		PayPalWithdrawDTO withdrawDTO = new PayPalWithdrawDTO(
+			    new PayPalWithdrawDTO.SenderBatchHeader(
+			        "MEDIEVAL_MEDIA_" + UUID.randomUUID(),
+			        "You have a payout!",
+			        "Thank you for using Medieval Media!"
+			    ),
+			    List.of(new PayPalWithdrawDTO.Item(
+			        "EMAIL",
+			        Map.of("value", value.toString(), "currency", currencyCode),
+			        userPaypalId,
+			        "Withdrawal from Medieval Media",
+			        "ITEM_" + UUID.randomUUID()
+			    ))
+			);
+		
+		ObjectMapper mapper = new ObjectMapper();
+		String body = mapper.writeValueAsString(withdrawDTO);
+		
+		HttpRequest request = HttpRequest.newBuilder()
+				  .uri(new URI(this.withdrawUrl))
+				  .headers("Content-Type", "application/json", "Authorization", "Bearer " + token)
+				  .POST(HttpRequest.BodyPublishers.ofString(body))
+				  .build();
+
+		HttpClient client = HttpClient.newHttpClient();
+		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+		
+		if (response.statusCode() != 200 && response.statusCode() != 201) {		
+			throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
+		} else {
+			user.setMoney(user.getMoney().min(value));
+			this.userRepository.save(user);
+			this.paymentService.updateWithdraw(paymentId);
+		}
+	}
+	
+	/**
+	 * Verify account balance
+	 * @throws URISyntaxException 
+	 * @throws InterruptedException 
+	 * @throws IOException 
+	 */
+	
+	protected boolean verifyBalance(BigDecimal value, String token, String currency) throws URISyntaxException, IOException, InterruptedException {
+		
+		HttpRequest request = HttpRequest.newBuilder()
+				.uri(new URI(this.balanceUrl + currency))
+				.headers("Content-Type", "application/json", "Authorization", "Bearer " + token)
+				.GET()
+				.build();
+		
+		HttpClient client = HttpClient.newHttpClient();
+		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+		
+		if (response.statusCode() != 200 && response.statusCode() != 201) {
+			throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
+		} else {
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode node = mapper.readTree(response.body());
+			
+			BigDecimal balance = new BigDecimal(node.path("balances").path("available_balance").path("value").asText("0.00"));
+
+			if (balance.compareTo(value) > 0) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Authenticate to get access token
+	 * 
+	 * auth docs: https://developer.paypal.com/api/rest/authentication/
+	 * batch payout docs: https://developer.paypal.com/docs/api/payments/v2/
+	 * 
+	 * @return
+	 * @throws URISyntaxException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	protected String authenticate() throws URISyntaxException, IOException, InterruptedException {
+		String url = this.authUrl + this.clientId;
+
+		String auth = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
+
+		HttpRequest request = HttpRequest.newBuilder()
+				.uri(new URI(url))
+				.headers("Content-Type", "application/x-www-form-urlencoded", "Authorization", "Basic " + auth)
+				.POST(HttpRequest.BodyPublishers.ofString("grant_type=client_credentials"))
+				.build();
+		
+		HttpClient client = HttpClient.newHttpClient();
+		HttpResponse<String> response = client.send(request,  HttpResponse.BodyHandlers.ofString());
+		
+		if (response.statusCode() == 200 || response.statusCode() == 201) {
+			ObjectMapper mapper = new ObjectMapper();
+	        JsonNode root = mapper.readTree(response.body());
+	        
+	        String token = root.path("access_token").asText();
+	        
+	        return token;
+		} else {
+			throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
+		}
 	}
 	
 }

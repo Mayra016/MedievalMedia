@@ -16,6 +16,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.MedievalMedia.Records.PaymentRequest;
+import com.MedievalMedia.Repositories.PaymentRepository;
+import com.MedievalMedia.Repositories.UserRepository;
+import com.MedievalMedia.Services.PaymentService;
 import com.MedievalMedia.Services.PaypalService;
 import com.paypal.api.payments.Payment;
 import com.paypal.base.rest.APIContext;
@@ -25,12 +28,17 @@ import com.paypal.base.rest.PayPalRESTException;
 @RequestMapping("/paypal")
 public class PayPalRestController {
 	
+	private UserRepository userRepository;
+	private PaymentRepository paymentRepository;
 	private PaypalService paypalService;
+	private PaymentService paymentService;
 	private Logger log = LoggerFactory.getLogger(PayPalRestController.class);
 	
 	@Autowired
-	public PayPalRestController() {
-		this.paypalService = new PaypalService();
+	public PayPalRestController(UserRepository userRepository) {
+		this.userRepository = userRepository;
+		this.paypalService = new PaypalService(this.userRepository);
+		this.paymentService = new PaymentService(this.paymentRepository);
 	}
 	
 	
