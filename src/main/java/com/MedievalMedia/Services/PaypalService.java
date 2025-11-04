@@ -147,12 +147,15 @@ public class PaypalService {
 	}
 	
 	/**
+	 *  Request withdraw through Paypal
+	 * 
 	 * Currency codes: https://developer.paypal.com/api/rest/reference/currency-codes/
 	 * 
-	 * @param userId
-	 * @param value
-	 * @param userPaypalId
-	 * @param currencyCode
+	 * @param userId The medieval media id of the user who requested the withdraw
+	 * @param value The total withdraw value
+	 * @param userPaypalId The paypal identification (email) of the user who requested the withdraw
+	 * @param currencyCode It specifies the currency to withdraw
+	 * 
 	 * @throws ResponseStatusException
 	 * @throws URISyntaxException 
 	 * @throws InterruptedException 
@@ -216,6 +219,11 @@ public class PaypalService {
 	
 	/**
 	 * Verify account balance
+	 * 
+	 * @param value Payment total value
+	 * @param token Authentication token
+	 * @param currency Currency code
+	 * 
 	 * @throws URISyntaxException 
 	 * @throws InterruptedException 
 	 * @throws IOException 
