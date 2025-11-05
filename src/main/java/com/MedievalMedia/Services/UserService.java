@@ -45,6 +45,11 @@ public class UserService implements UserDetailsService {
 		this.emailService = emailService;
 	}
     
+    @Autowired
+	public UserService(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
+    
     public UUID getCurrentUserId(String email) {
     	User user = this.userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		return user.getId();

@@ -121,5 +121,48 @@ public class PayPalRestController {
 		}
 	}
 	
+	/**
+	 * Endpoint to request a withdraw through Paypal
+	 * 
+	 * @param withdraw An DTO object containing the payment information
+	 * @param request To access authorization token
+	 * @return ResponseEntity It contains the http status and an explaining message
+	 * 
+	 * Possible http codes:
+	 * 
+	 *  200: if the withdraw was successful requested
+	 *  401: if the user isn't authenticated
+	 * 	502: if the communication with Paypal api was interrupted
+	 * 	500: if an unknown server error occurred
+	 */
+	
+	@PostMapping("/request-withdraw")
+	public ResponseEntity<String> requestWithdraw(@RequestBody UserRequestWithdrawPaypalDTO withdraw, HttpRequest request) {
+		try {
+			String token = request.getHeaders().get("Authorize").toString().replace("Bearer ", "");
+			
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User must be authenticated to fullfil this action");
+			}
+			
+			UUID userId = this.userService.getCurrentUserId(this.jwtService.extractEmail(token));
+			
+			this.paypalService.withdrawPayment(userId, withdraw.value(), withdraw.userPaypalId(), "USD");
+			
+			return ResponseEntity.status(HttpStatus.OK).body("Withdraw was successful requested");
+		} catch (ResponseStatusException e) {
+			this.log.error("Error while requesting withdraw: " + e);
+			
+			return ResponseEntity.status(e.getStatusCode()).body(e.getBody().toString());
+		} catch (InterruptedException e) {
+			this.log.error("Error while communicating with Paypal API to request a withdraw: " + e);
+			
+			return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Error while communicating with Paypal API to request a withdraw");
+		} catch (Exception e) {
+			this.log.error("Unknow error while requesting withdraw: " + e);
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error while requesting withdraw");
+		}
+	}
 	
 }
