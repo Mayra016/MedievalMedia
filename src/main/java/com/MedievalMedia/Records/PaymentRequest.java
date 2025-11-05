@@ -1,5 +1,7 @@
 package com.MedievalMedia.Records;
 
-public record PaymentRequest(Double total, String currency, String method, String intent, String description, String cancelUrl, String successUrl) {
+import java.math.BigDecimal;
+
+public record PaymentRequest(BigDecimal total, String currency, String method, String intent, String description, String cancelUrl, String successUrl) {
 
 }

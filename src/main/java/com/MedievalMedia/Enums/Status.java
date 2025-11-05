@@ -9,7 +9,9 @@ public enum Status {
 	CANCELED,
 	FAILED,
 	WITHDRAW_REQUESTED,
+	WITHDRAW_REQUESTED_PIX,
 	WITHDRAW_COMPLETED,
+	INVALID_BALANCE_PAYPAL,
 	COMPLETED;
 	
 	@JsonCreator
@@ -29,6 +31,8 @@ public enum Status {
                 return WITHDRAW_REQUESTED;
             case "WITHDRAW_COMPLETED":
                 return WITHDRAW_COMPLETED;
+            case "INVALID_BALANCE_PAYPAL":
+            	return INVALID_BALANCE_PAYPAL;
             default:
                 throw new IllegalArgumentException("Unknown value: " + value);
         }

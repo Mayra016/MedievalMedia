@@ -16,4 +16,6 @@ public interface PaymentRepository extends JpaRepository<Payment, String>{
 	@Query("SELECT p FROM Payment p WHERE p.id IN :ids AND p.status = :status")
 	List<Payment> findAllByIdAndStatus(@Param("ids") List<String> ids, @Param("status") Status status);
 
+	List<Payment> findByStatus(Status pendant);
+
 }
