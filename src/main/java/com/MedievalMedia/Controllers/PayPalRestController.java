@@ -54,9 +54,13 @@ public class PayPalRestController {
 	public ResponseEntity<Payment> createPayment(@RequestBody PaymentRequest request ) {
 		try {
 			
-			Payment payment = this.paypalService.createPayment(request.total(), request.currency(), request.method(), request.intent(), request.description());
+			Payment payment = this.paypalService.createPayment(request.total(), request.currency(), request.description());
 			return ResponseEntity.status(HttpStatus.OK).body(payment);
-		} catch (PayPalRESTException e) {
+		} catch (ResponseStatusException e) {
+			this.log.error("Error trying to create payment: " + e);
+			
+			return ResponseEntity.status(e.getStatusCode()).build();
+		}	catch (PayPalRESTException e) {
 			this.log.error("Error communicating with PayPal RESTApi to create payment: " + e);
 			
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
