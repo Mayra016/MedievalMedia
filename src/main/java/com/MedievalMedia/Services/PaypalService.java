@@ -262,6 +262,23 @@ public class PaypalService {
 	}
 	
 	/**
+	 * Verify if payment was approved in Paypal
+	 * 
+	 * @param paymentId The id of the payment
+	 * @return boolean It returns true if the payment was approved in Paypal and false if it has "created" or "failed" status in Paypal
+	 * @throws PayPalRESTException
+	 */
+	public boolean verifyPayment(String paymentId) throws PayPalRESTException {
+		Payment payment = Payment.get(this.apiContext, paymentId);
+		
+		if (payment.getState().equals("approved")) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
 	 * Authenticate to get access token
 	 * 
 	 * auth docs: https://developer.paypal.com/api/rest/authentication/

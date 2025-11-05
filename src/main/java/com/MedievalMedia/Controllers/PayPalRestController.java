@@ -63,16 +63,31 @@ public class PayPalRestController {
 	 * Possible http codes:
 	 * 
 	 * 	200: if the payment was successful created
-	 *  400: if an communication error with paypal api occured
+	 *  400: if an communication error with paypal api occurred
+	 *  406: if the payment creation failed
 	 * 	500: if an unknown server error occurred
 	 */
 
 	@PostMapping("/create-payment")
-	public ResponseEntity<Payment> createPayment(@RequestBody PaymentRequest request ) {
+	public ResponseEntity<Payment> createPayment(@RequestBody PaymentRequest request, HttpRequest httpRequest) {
 		try {
+			String token = httpRequest.getHeaders().get("Authorize").toString().replace("Bearer ", "");
 			
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+			}
+						
 			Payment payment = this.paypalService.createPayment(request.total(), request.currency(), request.description());
-			return ResponseEntity.status(HttpStatus.OK).body(payment);
+			
+			if (payment.getState() == "created") {
+				UUID userId = this.userService.getCurrentUserId(this.jwtService.extractEmail(token));
+				this.paymentService.createInternalPayment(userId.toString(), request.total(), payment.getId());
+				
+				return ResponseEntity.status(HttpStatus.OK).body(payment);
+			}
+			
+			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(payment);
+			
 		} catch (PayPalRESTException e) {
 			this.log.error("Error communicating with PayPal RESTApi to create payment: " + e);
 			
@@ -95,7 +110,7 @@ public class PayPalRestController {
 	 * 
 	 *  200: if the payment was successful confirmed
 	 * 	409: if the payment was not approved. The payment status is accessible through the body
-	 * 	509: if an error with paypal api occured
+	 * 	502: if an error with Paypal api occured
 	 * 	500: if an unknown server error occurred
 	 */
 	
@@ -105,6 +120,7 @@ public class PayPalRestController {
 			Payment payment = this.paypalService.executePayment(paymentId, payerId);
 			
 			if (payment.getState().equals("approved")) {
+				this.paymentService.updatePaymentStatus(paymentId);
 				return ResponseEntity.status(HttpStatus.OK).body("Payment success");
 			}
 			
