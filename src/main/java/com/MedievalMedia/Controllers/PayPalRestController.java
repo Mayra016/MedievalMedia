@@ -63,7 +63,8 @@ public class PayPalRestController {
 	 * Possible http codes:
 	 * 
 	 * 	200: if the payment was successful created
-	 *  400: if an communication error with paypal api occurred
+	 *  400: if an communication error with Paypal api occurred
+	 *  401: if user is not authenticated
 	 *  406: if the payment creation failed
 	 * 	500: if an unknown server error occurred
 	 */
@@ -122,8 +123,9 @@ public class PayPalRestController {
 	 */
 	
 	@GetMapping("/payment/success")
-	public ResponseEntity<String> paymentSuccess(@RequestParam("paymentId") String paymentId, @RequestParam("payerId") String payerId) {
+	public ResponseEntity<String> paymentSuccess(@RequestParam("paymentId") String paymentId, @RequestParam("payerId") String payerId, HttpRequest request) {
 		try {
+			
 			Payment payment = this.paypalService.executePayment(paymentId, payerId);
 			
 			if (payment.getState().equals("approved")) {
@@ -141,6 +143,45 @@ public class PayPalRestController {
 			this.log.error("Unknow error completing payment: " + e);
 			
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error completing payment");
+		}
+	}
+	
+	/**
+	 *  Cancel a payment
+	 * 
+	 * @param paymentId
+	 * @return ResponseEntity It contains the http status code and an explaining message
+	 * 
+	 * Possible http codes:
+	 * 
+	 *  200: if the payment was successful canceled
+	 *  401: if user is not authenticated
+	 *  403: if user doesn't match the payment creator
+	 *  404: if the payment was not found
+	 * 	500: if an unknown server error occurred
+	 */
+	@GetMapping("/payment/cancel")
+	public ResponseEntity<String> cancelPayment(@RequestParam("paymentId") String paymentId, HttpRequest request) {
+		try {
+			String token = request.getHeaders().get("Authorize").toString().replace("Bearer ", "");
+			
+			if (!this.jwtService.validateToken(token)) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User must be authenticated to fullfil this action");
+			}
+			
+			UUID userId = this.userService.getCurrentUserId(this.jwtService.extractEmail(token));
+			
+			this.paymentService.cancelPayment(paymentId, userId);
+			
+			return ResponseEntity.status(HttpStatus.OK).body("Payment was canceled");
+		} catch (ResponseStatusException e) {
+			this.log.error("Error canceling payment: " + e);
+			
+			return ResponseEntity.status(e.getStatusCode()).body(e.getBody().toString());
+		} catch (Exception e) {
+			this.log.error("Unknow error canceling payment: " + e);
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error canceling payment");
 		}
 	}
 	

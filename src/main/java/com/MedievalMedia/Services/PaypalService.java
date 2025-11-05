@@ -88,10 +88,10 @@ public class PaypalService {
 		this.apiContext = new APIContext(clientId, clientSecret, mode);
 		this.frontUrl = this.frontUrl == null ? "http://localhost:4200" : this.frontUrl;
 		String successUrl = UriComponentsBuilder.fromHttpUrl(frontUrl)
-				.path("success-payment")
+				.path("/payment/success")
 				.toUriString();
 		String cancelUrl = UriComponentsBuilder.fromHttpUrl(frontUrl)
-				.path("cancel-payment")
+				.path("/payment/cancel")
 				.toUriString();
 		
 		Amount amount = new Amount();

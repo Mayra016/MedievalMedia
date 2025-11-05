@@ -5,7 +5,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.MedievalMedia.Entities.Payment;
 import com.MedievalMedia.Enums.Status;
@@ -117,6 +120,34 @@ public class PaymentService {
 			payment.setStatus(Status.COMPLETED);
 			
 			this.paymentRepository.save(payment);
+		}
+	}
+
+	/**
+	 *  Cancel payment
+	 * 
+	 * @param paymentId The id of the payment
+	 * @throws ResponseStatusException 
+	 * 	FORBIDDEN: if user doesn't match the payer
+	 * 	NOT_FOUND: if the payment was not found
+	 * 
+	 */
+	public void cancelPayment(String paymentId, UUID userId) {
+		Optional<Payment> searchPayment = this.paymentRepository.findById(paymentId);
+		
+		if (searchPayment.isPresent()) {
+			Payment payment = searchPayment.get();
+			
+			if (userId.toString().equals(payment.getId_payer())) {
+				payment.setStatus(Status.CANCELED);
+				
+				this.paymentRepository.save(payment);
+			} else {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not the payer");
+			}
+			
+		} else {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment was not found");
 		}
 	}
 }
