@@ -63,7 +63,7 @@ public class PayPalServiceTest {
 		this.paymentService = new PaymentService(this.paymentRepository);
 		this.service = new PaypalService(this.userRepository, this.clientId, this.clientSecret, this.mode, this.paymentService, this.withdrawUrl, this.balanceUrl, this.authUrl);
 	}
-	
+
 	@Test
 	public void withdrawPayment() throws ResponseStatusException, URISyntaxException, IOException, InterruptedException {
 		User user = new User();
@@ -88,22 +88,10 @@ public class PayPalServiceTest {
 	
 	@Test
 	public void createPaymentOK() throws PayPalRESTException {
-		PaymentRequest request = new PaymentRequest(Double.valueOf(0.02), "USD", "PAYPAL", "ORDER", "Test", "", "");
-		Payment payment = this.service.createPayment(request.total(), request.currency(), request.method(), request.intent(), request.description());
+		PaymentRequest request = new PaymentRequest((double) 0.02, "USD", "PAYPAL", "ORDER", "Test", "", "");
+		Payment payment = this.service.createPayment(request.total(), request.currency(), request.description());
 		
 		assertNotNull(payment);
 		assertTrue(payment.getTransactions().size() > 0);
-	}
-	
-	@Test
-	public void createPaymentError() throws PayPalRESTException {
-		PaymentRequest request = new PaymentRequest(Double.valueOf(0.02), "USD", "invalid method", "ORDER", "Test", "", "");
-		
-		PayPalRESTException exception = assertThrows(
-				PayPalRESTException.class,
-    			() -> this.service.createPayment(request.total(), request.currency(), request.method(), request.intent(), request.description())
-        );
-		assertNotNull(exception);
-		assertTrue(exception instanceof PayPalRESTException);
 	}
 }

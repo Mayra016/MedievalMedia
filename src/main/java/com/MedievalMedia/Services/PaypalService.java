@@ -85,7 +85,7 @@ public class PaypalService {
 	 * @throws ResponseStatusException 
 	 * 	PayPalRESTException: if payment generation failed
 	 */
-	public Payment createPayment(Double total, String currency, String method, String intent, String description) 
+	public Payment createPayment(Double total, String currency, String description) 
 	 throws PayPalRESTException {
 		this.apiContext = new APIContext(clientId, clientSecret, mode);
 		this.frontUrl = this.frontUrl == null ? "http://localhost:4200" : this.frontUrl;
@@ -108,11 +108,11 @@ public class PaypalService {
 		transactions.add(transaction);
 		
 		Payer payer = new Payer();
-		payer.setPaymentMethod(method);
+		payer.setPaymentMethod("PAYPAL");
 		
 		
 		Payment payment = new Payment();
-		payment.setIntent(intent);
+		payment.setIntent("ORDER");
 		payment.setPayer(payer);
 		payment.setTransactions(transactions);
 		
@@ -176,7 +176,11 @@ public class PaypalService {
 		String token = this.authenticate();
 		
 		// check if medieval media paypal account has enough balance to fulfill the transaction
-		this.verifyBalance(value, token, currencyCode);
+		if (this.verifyBalance(value, token, currencyCode) == false) {
+			this.paymentService.createPendantPaypalWithdrawPayment(userPaypalId, value);
+			
+			throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Payment will be within 4 days");
+		}
 		
 		String paymentId = this.paymentService.createInternalPayment(userPaypalId, value);
 		
@@ -209,6 +213,7 @@ public class PaypalService {
 		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 		
 		if (response.statusCode() != 200 && response.statusCode() != 201) {		
+			this.paymentService.failedWithdraw(paymentId);
 			throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
 		} else {
 			user.setMoney(user.getMoney().min(value));
@@ -245,8 +250,7 @@ public class PaypalService {
 		} else {
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode node = mapper.readTree(response.body());
-			
-			BigDecimal balance = new BigDecimal(node.path("balances").path("available_balance").path("value").asText("0.00"));
+			BigDecimal balance = new BigDecimal(node.path("balances").get(0).path("available_balance").path("value").asText("0.00"));
 
 			if (balance.compareTo(value) > 0) {
 				return true;
