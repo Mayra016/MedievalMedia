@@ -69,7 +69,7 @@ public class PayPalRestController {
 	 */
 
 	@PostMapping("/create-payment")
-	public ResponseEntity<Payment> createPayment(@RequestBody PaymentRequest request, HttpRequest httpRequest) {
+	public ResponseEntity<String> createPayment(@RequestBody PaymentRequest request, HttpRequest httpRequest) {
 		try {
 			String token = httpRequest.getHeaders().get("Authorize").toString().replace("Bearer ", "");
 			
@@ -83,10 +83,17 @@ public class PayPalRestController {
 				UUID userId = this.userService.getCurrentUserId(this.jwtService.extractEmail(token));
 				this.paymentService.createInternalPayment(userId.toString(), request.total(), payment.getId());
 				
-				return ResponseEntity.status(HttpStatus.OK).body(payment);
+				String approvalUrl = payment.getLinks()
+					    .stream()
+					    .filter(link -> "approval_url".equals(link.getRel()))
+					    .findFirst()
+					    .map(link -> link.getHref())
+					    .orElseThrow(() -> new RuntimeException("Approval URL not found"));
+				
+				return ResponseEntity.status(HttpStatus.OK).body(approvalUrl);
 			}
 			
-			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(payment);
+			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Payment was not approved. Current status: " + payment.getState());
 			
 		} catch (PayPalRESTException e) {
 			this.log.error("Error communicating with PayPal RESTApi to create payment: " + e);

@@ -83,7 +83,7 @@ public class PaypalService {
 	 * @throws PayPalRESTException
 	 * 	PayPalRESTException: if payment generation failed
 	 */
-	public Payment createPayment(Double total, String currency, String description) 
+	public Payment createPayment(BigDecimal total, String currency, String description) 
 	 throws PayPalRESTException {
 		this.apiContext = new APIContext(clientId, clientSecret, mode);
 		this.frontUrl = this.frontUrl == null ? "http://localhost:4200" : this.frontUrl;

@@ -88,9 +88,9 @@ public class PayPalServiceTest {
 	
 	@Test
 	public void createPaymentOK() throws PayPalRESTException {
-		PaymentRequest request = new PaymentRequest((double) 0.02, "USD", "PAYPAL", "ORDER", "Test", "", "");
+		PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "BRL", "", "", "Test", "", "");
 		Payment payment = this.service.createPayment(request.total(), request.currency(), request.description());
-		
+
 		assertNotNull(payment);
 		assertTrue(payment.getTransactions().size() > 0);
 	}
