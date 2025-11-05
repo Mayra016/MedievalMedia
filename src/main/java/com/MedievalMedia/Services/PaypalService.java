@@ -177,7 +177,7 @@ public class PaypalService {
 		
 		// check if medieval media paypal account has enough balance to fulfill the transaction
 		if (this.verifyBalance(value, token, currencyCode) == false) {
-			this.paymentService.createPendantPaypalWithdrawPayment(userPaypalId, value);
+			this.paymentService.createPendingPaypalWithdrawPayment(userPaypalId, value);
 			
 			throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Payment will be within 4 days");
 		}
