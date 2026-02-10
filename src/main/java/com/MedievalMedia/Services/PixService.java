@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,8 @@ import com.MedievalMedia.Entities.Interactions;
 import com.MedievalMedia.Entities.Payment;
 import com.MedievalMedia.Entities.User;
 import com.MedievalMedia.Enums.Status;
+import com.MedievalMedia.Models.PixItauToken;
+import com.MedievalMedia.Records.CobDTO;
 import com.MedievalMedia.Records.PixDTO;
 import com.MedievalMedia.Records.RecurrencyPix;
 import com.MedievalMedia.Repositories.PaymentRepository;
@@ -46,7 +49,7 @@ import lombok.Getter;
 public class PixService {
 
 	@Value("${PIX_BASE_URL}") private String pixUrl;
-	@Value("${PIX_TOKEN}") private String token;
+	@Value("${PIX_TOKEN_SANDBOX}") private String token;
 	@Value("${PIX_RECEIVER}") private String receiverKey;
 	@Value("${ITAU_API_TOKEN}") private String itauApiToken;
 	@Value("${PIX_URL_ITAU}") private String apiPixRecebimentos;
@@ -56,8 +59,8 @@ public class PixService {
 	private Interactions interactions = new Interactions();
 	private Logger log = LoggerFactory.getLogger(PixService.class);
 	
-	@Getter
 	private String price = "";
+	private PixItauToken tokenModel = new PixItauToken();
 	private PaymentRepository paymentRepository;
 	private UserRepository userRepository;
 	
@@ -66,12 +69,60 @@ public class PixService {
 		this.userRepository = userRepository;
 	}
 	
-	public PixService(PaymentRepository paymentRepository, String pixUrl, String token, String receiverKey) {
+	public PixService(PaymentRepository paymentRepository, String pixUrl, String token, String receiverKey, String itauPixClientId, String itauClientSecret) {
 		this.paymentRepository = paymentRepository;
 		this.pixUrl = pixUrl;
 		this.token = token;
 		this.receiverKey = receiverKey;
+		this.itauPixClientId = itauPixClientId;
+		this.itauPixClientSecret = itauClientSecret;
 	}
+	
+	//https://devportal.itau.com.br/nossas-apis/itau-ep9-gtw-pix-recebimentos-ext-v2?tab=especificacaoTecnica
+	public String createQRCodeSimple(PixDTO pix, String payerId, String finalUserId, String donationType) throws URISyntaxException, IOException, InterruptedException {
+		String newToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNThkY2Q2OS1jZTc2LTM3MWMtYjJlYy0zMGZkMzUwYzJmMDAiLCJleHAiOjE3NjIzNzA0NjgsImlhdCI6MTc2MjM3MDE2OCwic291cmNlIjoic3RzLXNhbmRib3giLCJlbnYiOiJQIiwiZmxvdyI6IkNDIiwic2NvcGUiOiJjYXNobWFuYWdlbWVudC1jb25zdWx0YWJvbGV0b3MtdjEtYXdzLXNjb3BlIiwidXNlcm5hbWUiOiJtYXlyYTE2dmZ4QGdtYWlsLmNvbSIsIm9yZ2FuaXphdGlvbk5hbWUiOiJBdXRvIENhZGFzdHJvIn0.8yeK8ZbLLvFxrnbcXNpiJonN93k9b38nEP5_-ptESSs"; //this.authenticate();
+		
+		CobDTO cob = new CobDTO(
+                Map.of("original", "10.00"),
+                "11963372215"
+        );
+
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonBody = mapper.writeValueAsString(cob);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("https://sandbox.devportal.itau.com.br/itau-ep9-gtw-pix-recebimentos-ext-v2/v2"))
+                .headers(
+                        "Content-Type", "application/json",
+                        "x-itau-apikey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNThkY2Q2OS1jZTc2LTM3MWMtYjJlYy0zMGZkMzUwYzJmMDAiLCJleHAiOjE3NjIzNzI5ODMsImlhdCI6MTc2MjM3MjY4Mywic291cmNlIjoic3RzLXNhbmRib3giLCJlbnYiOiJQIiwiZmxvdyI6IkNDIiwic2NvcGUiOiJjYXNobWFuYWdlbWVudC1jb25zdWx0YWJvbGV0b3MtdjEtYXdzLXNjb3BlIiwidXNlcm5hbWUiOiJtYXlyYTE2dmZ4QGdtYWlsLmNvbSIsIm9yZ2FuaXphdGlvbk5hbWUiOiJBdXRvIENhZGFzdHJvIn0.2vmm2dd2OxHL_HiW7QEJ_9Vg0AfcECM2SASwdp02814",
+                        "x-itau-correlationID", UUID.randomUUID().toString()
+                )
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        System.out.println("Status Code: " + response.statusCode());
+        System.out.println("Response Body: " + response.body());
+        
+        Thread.sleep(4000);
+
+        if (response.statusCode() == 201 || response.statusCode() == 200) {
+            
+            JsonNode root = mapper.readTree(response.body());
+            String pixCopiaECola = root.path("pixCopiaECola").asText();
+            String txid = root.path("txid").asText();
+
+            System.out.println("TXID: " + txid);
+            System.out.println("Pix Copia e Cola: " + pixCopiaECola);
+
+            return pixCopiaECola; // QR Code
+        } else {
+            throw new RuntimeException("Error creating payment cobrança: " + response.statusCode() + " - " + response.body());
+        }
+    }
+
 	
 	/**
 	 * Creates a PIX QR code payment and stores the payment in the database.
@@ -140,6 +191,7 @@ public class PixService {
 
 					
 		} else {
+			System.out.println("#################" + response.toString());
 			this.log.error("Error creating payment with pix: " + response.body());
 			throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
 		}
@@ -220,36 +272,16 @@ public class PixService {
 	
 	/*
 	*   Authenticate
-	*   
+	*   Docs: https://devportal.itau.com.br/autenticacao-documentacao#client-jwt-tls
+	
 	* @return acess_token
 	*/
 	protected String authenticate() throws URISyntaxException, IOException, InterruptedException {
-
-		String form = "grant_type=client_credentials"
-                + "&client_id=" + URLEncoder.encode(this.itauPixClientId, StandardCharsets.UTF_8)
-                + "&client_secret=" + URLEncoder.encode(this.itauPixClientSecret, StandardCharsets.UTF_8);
-
-		String urlSandbox = "https://api.itau.com.br/sandbox/api/oauth/token";
-		String urlProduction = "https://oauthd.itau/identity/connect/token";
-		HttpRequest request = HttpRequest.newBuilder()
-				.uri(new URI(urlSandbox))
-				.headers("Content-Type", "application/x-www-form-urlencoded")
-				.POST(HttpRequest.BodyPublishers.ofString(form)) 
-                .build();
+		if (!this.tokenModel.isValid()) {
+			this.tokenModel.authenticate();
+		}
 		
-		HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        
-        if (response.statusCode() == 200 || response.statusCode() == 201) {
-			ObjectMapper mapper = new ObjectMapper();
-	        JsonNode root = mapper.readTree(response.body());
-	        
-	        String token = root.path("access_token").asText();
-	        
-	        return token;
-        } else {
-        	throw new ResponseStatusException(HttpStatus.valueOf(response.statusCode()), response.body());
-        }
+		return this.tokenModel.getToken();
 	}
 	
 	/**
@@ -268,12 +300,16 @@ public class PixService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "You haven't enough money");
 		}
 		
+		if (value.compareTo(BigDecimal.valueOf(20)) < 0) {
+			throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Withdraws lesser than R$ 20,00 are not allowed");
+		}
+		
 		Payment payment = new Payment();
 		payment.setId(UUID.randomUUID().toString());
 		payment.setDate(LocalDateTime.now().toString());
 		payment.setId_final_user(userId.toString());
 		payment.setId_payer("MEDIEVAL_MEDIA");
-		payment.setStatus(Status.WITHDRAW_REQUESTED);
+		payment.setStatus(Status.WITHDRAW_REQUESTED_PIX);
 		payment.setTotal(value);
 		
 		user.setMoney(user.getMoney().min(value));
@@ -294,7 +330,7 @@ public class PixService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid data");
 		}
 		
-		List<Payment> payments = this.paymentRepository.findAllByIdAndStatus(paymentIds, Status.WITHDRAW_REQUESTED);
+		List<Payment> payments = this.paymentRepository.findAllByIdAndStatus(paymentIds, Status.WITHDRAW_REQUESTED_PIX);
 		
 		for (Payment payment : payments) {
 			payment.setStatus(Status.WITHDRAW_COMPLETED);

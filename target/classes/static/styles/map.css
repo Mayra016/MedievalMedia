@@ -1,0 +1,19 @@
+.post {
+  margin: auto;
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+}
+
+h2 {
+  width: 110%;
+}
+
+.post div {
+  margin: auto;
+  margin-left: 30px;
+}
+
+.post div input {
+  background-color: var(--white);
+  width: 60%;
+}

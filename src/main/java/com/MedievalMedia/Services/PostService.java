@@ -185,12 +185,20 @@ public class PostService {
 
 	public List<Post> getPostsAnswers(Post post) {
 		try {
-			return this.postRepository.findAllByParent(post);
+		    Optional<Post> searchPost = this.postRepository.findById(post.getId());
+		    
+		    if (searchPost.isPresent()) {
+		        return this.postRepository.findAllByParent(post);
+		    }
+		    
+		    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Main post not found");
+		
+			
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting post answers");
 			
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No answers found");
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "No answers found");
 		}
 	}
 

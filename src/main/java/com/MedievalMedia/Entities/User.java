@@ -41,6 +41,7 @@ public class User {
 	private LocalDate birthday;
 	private LocalDate enterDate;
 	private String country;
+	private String reign;
 	private String[] titles = new String[1];
 	private BigDecimal money;
 	@ManyToMany
