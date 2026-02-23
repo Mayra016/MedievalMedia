@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Page;
+
 
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
@@ -187,7 +190,7 @@ public class PostController {
 	 */
 	
 	@GetMapping("/get-followed-posts")
-	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {
+	public ResponseEntity<Page<Post>> getFollowPosts(@RequestParam("size") int size, @RequestParam("page") int page, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			if (!this.jwtService.validateToken(token)) {
@@ -195,14 +198,19 @@ public class PostController {
 			}
 			String email = this.jwtService.extractEmail(token);
 			
-			PostsResponse response = this.postService.getFollowedPosts(this.userService.getCurrentUserId(email));
+			Page<Post> response = this.postService.getFollowedPosts(this.userService.getCurrentUserId(email), size, page);
 			
-			return ResponseEntity.status(response.exception().getStatusCode()).body(response.posts());
+			return ResponseEntity.status(HttpStatus.OK).body(response);
+		} catch(ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.error("Unknow error getting posts from followers");
+			
+			return ResponseEntity.status(e.getStatus()).build();
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting posts from followers");
 			
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
 		}
 	}
 	
@@ -221,9 +229,9 @@ public class PostController {
 	 */
 	
 	@PostMapping("/get-post-answers")
-	public ResponseEntity<List<Post>> getPostAnswers(@RequestBody Post post) {
+	public ResponseEntity<Page<Post>> getPostAnswers(@RequestBody Post post) {
 		try {
-			List<Post> posts = this.postService.getPostsAnswers(post);
+			Page<Post> posts = this.postService.getPostsAnswers(post);
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
 			
 		} catch(ResponseStatusException e) {
@@ -295,7 +303,7 @@ public class PostController {
 	 */
 	
 	@PostMapping("/get-global-posts")
-	public ResponseEntity<List<Post>> getLastPostsGlobaly(Post post, HttpRequest request) {
+	public ResponseEntity<Page<Post>> getLastPostsGlobaly(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			if (!this.jwtService.validateToken(token)) {
@@ -303,7 +311,7 @@ public class PostController {
 			}
 			String email = this.jwtService.extractEmail(token);
 			
-			List<Post> posts = this.postService.getLastPostsGlobaly(post, this.userService.getCurrentUserId(email));
+			Page<Post> posts = this.postService.getLastPostsGlobaly(post, this.userService.getCurrentUserId(email), size, page);
 			
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
 		} catch(ResponseStatusException e) {
@@ -324,7 +332,7 @@ public class PostController {
 	 *
 	 * @param reign The reign that the letters must be published
 	 * @param request The http request to access jwt token and verify if user is loged in
-	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts that were published in this reign
+	 * @return ResponseEntity containing a message of the HTTP status code and a pagination with the latest posts that were published in this reign
 	 *
 	 * Http response codes:
 	 *
@@ -334,14 +342,14 @@ public class PostController {
 	 */
 	
 	@GetMapping("/posts-by-reign")
-	public ResponseEntity<List<Post>> getLastPostsByReign(@RequestParam String reign, HttpRequest request) {
+	public ResponseEntity<Page<Post>> getLastPostsByReign(@RequestParam String reign, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorize").toString().replace("Bearer: ", "");
 			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			
-			List<Post> result = this.postService.getLastPostsByReign(reign);
+			Page<Post> result = this.postService.getLastPostsByReign(reign, size, page);
 			
 			return ResponseEntity.status(HttpStatus.OK).body(result);
 		} catch(ResponseStatusException e) {
@@ -406,18 +414,18 @@ public class PostController {
 	 * @param userId The user id of the request post's creator
 	 * @param lastPostId The id of the last post loaded in case of user had already scrolled all previous loaded posts
 	 * @param request The http request to access jwt token and verify if user is loged in
-	 * @return ResponseEntity containing a message of the HTTP status code and a list with the posts
+	 * @return ResponseEntity containing a message of the HTTP status code and a pagination with the posts
 	 *
 	 * Http response codes:
 	 *
 	 * 200: if the posts were successful retrieved
 	 * 401: if the user is unauthenticated
-	 * 404: if posts not found
+	 * 404: if posts or user not found
 	 * 500: if an unknow server error occurred
 	 */
 	
 	@GetMapping("/get-user-posts")
-	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
+	public ResponseEntity<Page<Post>> getPostsData(@RequestParam(defaultValue = "50") int size, @RequestParam(defaultValue = "0") int page, @RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 
@@ -427,7 +435,7 @@ public class PostController {
 			
 			String email = this.jwtService.extractEmail(token);
 			
-			List<Post> posts = this.postService.getUserPosts(this.userService.getCurrentUserId(email), lastPostId);
+			Page<Post> posts = this.postService.getUserPosts(this.userService.getCurrentUserId(email), size, page);
 		
 			
 			return ResponseEntity.status(HttpStatus.OK).body(posts);

@@ -59,19 +59,30 @@ public class UserRestAPI {
 	**/
 	@PostMapping("/change-credentials")
 	public ResponseEntity<String> changeCredentials(@RequestBody String email, HttpRequest request) {
-	    String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+	    try {        
+	        String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
+	        
+	        if (!this.jwtService.validateToken(token)) {
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authorized");
+	        }
+	        
+	        String userEmail = this.jwtService.extractEmail(token);
+	        
+	        if (!userEmail.equals(email)) {
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authorized");
+	        }
 	    
-	    if (!this.jwtService.validateToken(token)) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authorized");
-	    }
-	    
-	    String userEmail = this.jwtService.extractEmail(token);
-	    
-	    if (!userEmail.equals(email)) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authorized");
-	    }
-	
-		return this.userService.changeCredentials(email);
+		    this.userService.changeCredentials(email);
+		    
+		    return ResponseEntity.status(HttpStatus.OK).body("Change credentials email sended to user " + email);
+        } catch(ResponseStatusException e ) {
+            this.log.error("User not found " + email);
+            return ResponseEntity.status(e.getStatus()).body(e.getReason());
+        } catch(Exception e ) {
+            this.log.error("Unknow server error while sending email to change credentials for user " + email);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow server error while sending email to change credentials");
+        }
+        
 	}
 	
 	/**

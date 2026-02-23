@@ -154,27 +154,25 @@ public class UserService implements UserDetailsService {
 		}
 	}
 
-	public ResponseEntity<String> changeCredentials(String email) {
-		try {
-			Optional<User> searchUser = this.userRepository.findByEmail(email);
+    /**
+    * Change credentials
+    *
+    * @param email The email to send the link to change the password
+    * @throws ResponseStatusException NOT_FOUND if the email was not found
+    **/
+	public void changeCredentials(String email) {
+		Optional<User> searchUser = this.userRepository.findByEmail(email);
 
-			if (searchUser.isPresent()) {
-				User user = searchUser.get();
+		if (searchUser.isPresent()) {
+			User user = searchUser.get();
 				
-				String token = JwtTokenService.generateToken(email);
-				this.emailService.sendChangeCredentials(email, token, user.getAppLanguage());
-				
-				return ResponseEntity.status(HttpStatus.OK).body("Change password email successfuly sended");
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-			}
-			
-		} catch(Exception e) {
-			e.printStackTrace();
-			this.log.error("Error changing credentials");
-			
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sending email to change password");
+			String token = JwtTokenService.generateToken(email);
+			this.emailService.sendChangeCredentials(email, token, user.getAppLanguage());
+
+		} else {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found");
 		}
+
 	}
 
 	/**

@@ -43,6 +43,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+
 
 @Service
 public class PostService {
@@ -124,14 +128,16 @@ public class PostService {
 	 * Get last posts with pagination filtered by reign 
 	 *
 	 * @param reign The reign that the letters must be published
-	 * @return List<Post> a list with the latest posts that were published in this reign
+	 * @return Page<Post> a pagination with the latest posts that were published in this reign
 	 * @throws ResponseStatusException 
 	 * 	BAD_REQUEST: if posts could not be reached
 	 */
 
-	public List<Post> getLastPostsByReign(String reign) {
+	public Page<Post> getLastPostsByReign(String reign, int size, int page) {
 		try {
-			return this.postRepository.findLastFifthyByReign(reign, PageRequest.of(0,50));
+		    Page<Post> posts = new PageImpl<>(List.of(new Post()), Pageable.ofSize(size), size);
+		
+			return this.postRepository.findLastByReign(reign, PageRequest.of(page, size));
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting 50 most recent posts in " + reign);
@@ -146,25 +152,20 @@ public class PostService {
 	 *
 	 * @param post The last post loaded or a post with the date 11/11/1111 to signalizes that it is the first time to load the page
 	 * @param userId The user id of the user who made the request to filter its posts
-	 * @return List<Post> a list with the latest posts
+	 * @return Page<Post> a pagination with the latest posts
 	 * @throws ResponseStatusException 
 	 * 	BAD_REQUEST: if posts were not found 
 	 */
 
-	public List<Post> getLastPostsGlobaly(Post post, UUID userId) {
+	public Page<Post> getLastPostsGlobaly(UUID userId, int size, int page) {
 
 		try {
-			// if user is scrolling down and needs more older posts. It needs the last loaded post id and date in aim to load older posts
-
-			if (!post.getDate().equals(LocalDate.of(1111, 11, 11))) {
-				Long lastId = this.postRepository.findLastPostId(PageRequest.of(0, 1)).get(0);
-				List<Post> posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDesc(post.getDate(), lastId, PageRequest.of(0, 50), userId);
-				return posts;
-			} else {
-			// if the user requested global posts for first page loading
-				List<Post> posts = this.postRepository.findLastFifthy(PageRequest.of(0, 50), userId);
-				return posts;
-			}
+		    Page<Post> posts = new PageImpl<>(List.of(new Post()), Pageable.ofSize(size), size);
+		    
+		    posts = this.postRepository.findLastGlobalPosts(PageRequest.of(page, size));  
+		    
+		    return posts;
+		
 						
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -183,12 +184,12 @@ public class PostService {
 	 * @throws ResponseStatusException if answers not found 
 	 */
 
-	public List<Post> getPostsAnswers(Post post) {
+	public Page<Post> getPostsAnswers(Post post, int size, int page) {
 		try {
 		    Optional<Post> searchPost = this.postRepository.findById(post.getId());
 		    
 		    if (searchPost.isPresent()) {
-		        return this.postRepository.findAllByParent(post);
+		        return this.postRepository.findAllByParent(post.getId(), PageRequest.of(page, size);
 		    }
 		    
 		    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Main post not found");
@@ -235,15 +236,25 @@ public class PostService {
 	}
 
 
-	public List<Post> getPostsFromFollowed(User user) {
-		try {
-			return this.postRepository.findAllByCreatorInOrderByDateDesc(user.getFollow(), PageRequest.of(0, 50));
-		} catch(Exception e) {
-			e.printStackTrace();
-			this.log.error("Error getting posts from follows");
-			
-			return List.of(new Post());
-		}
+    /**
+    * Get posts from followed users
+    *
+    * @param user User object with user info
+    * @param size The quantity of post that must be retrieved
+    * @param page The page that must loaded
+    * @return Page<Post> A pagination containing the posts
+    * @throws ResponseStatusException If user not found 
+    **/
+	public Page<Post> getPostsFromFollowed(User user, int size, int page) {
+	    Optional<User> searchUser = this.userRepository.findById(user.getId());
+	    
+	    if (searchUser.isPresent()) {
+	        return this.postRepository.findAllByCreatorInOrderByDateDesc(user.getFollow(), PageRequest.of(page, size));
+	    } else {
+	        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+	    }
+	
+		
 	}
 	
 	/**
@@ -305,23 +316,17 @@ public class PostService {
 	 * 	NOT_FOUND: if post or user not found
 	 */
 
-	public PostsResponse getFollowedPosts(UUID id) {
+	public Page<Post> getFollowedPosts(UUID id, int size, int page) {
 		Optional<User> searchUser = this.userRepository.findById(id);
 		
 		if (searchUser.isPresent()) {
 			User user = searchUser.get();
-			try {
-				List<Post> posts =  this.postRepository.findAllByCreatorInOrderByDateDesc(user.getFollow(), PageRequest.of(0, 50));
-				return new PostsResponse(posts, new ResponseStatusException(HttpStatus.OK, "Success getting followed posts"));
-			} catch(Exception e) {
-				e.printStackTrace();
-				this.log.error("Error getting posts from follows");
-				
-				return new PostsResponse(List.of(new Post()), new ResponseStatusException(HttpStatus.NOT_FOUND, "Posts not found"));
-			}
+			Page<Post> posts =  this.postRepository.findAllByFollowedInOrderByDateDesc(user.getFollow(), PageRequest.of(page, size));
+			
+			return posts;
 			
 		} else {
-			return new PostsResponse(List.of(new Post()), new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		}	
 		
 		
@@ -347,21 +352,23 @@ public class PostService {
 	 *
 	 * @param userId The user id of the post's creator
 	 * @param lastPostId The id of the last post loaded in case of user had already scrolled all previous loaded posts
-	 * @return List<Post> a list with the posts.
-	 * @throws ResponseStatusException if posts were not found 
+	 * @return Page<Post> a list with the posts.
+	 * @throws ResponseStatusException if posts or user were not found 
 	 */
 
-	public List<Post> getUserPosts(UUID userId, long lastPostId) {
+	public Page<Post> getUserPosts(UUID userId, int size, int page) {
 		List<Post> posts = new ArrayList<>();
 		
-		if (lastPostId != -404) {
-			// load older posts while scrolling down
-			Post lastPost = this.postRepository.findById(lastPostId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Latest post not found"));
-			posts = this.postRepository.findTop50ByDateLessThanOrderByCreatedAtDescByUser(lastPost.getDate(), lastPostId, PageRequest.of(0, 50), userId);
+		Page<Post> posts = new PageImpl<>(List.of(new Post()), Pageable.ofSize(size), size);
+		
+		Optional<User> searchUser = this.userRepository.findById(userId);
+		
+		if (searchUser.isPresent()) {
+		    posts = this.postRepository.findLastPostsFromUser(PageRequest.of(page, size), userId);
 		} else {
-			// first page load request
-			posts = this.postRepository.findLastFifthyFromUser(PageRequest.of(0, 50), userId);
+		    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
 		}
+		
 		
 		return posts;
 	}

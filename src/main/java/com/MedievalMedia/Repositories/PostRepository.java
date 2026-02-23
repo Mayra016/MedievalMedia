@@ -32,7 +32,7 @@ public interface PostRepository extends JpaRepository<Post, Long>{
 	List<Post> findTop50ByDateLessThanOrderByCreatedAtDesc(@Param("date") LocalDate date, @Param("lastId") long l, Pageable pageable, @Param("userId") UUID userId);
 		
 	@Query("SELECT p FROM Post p WHERE p.parent = :post ORDER BY p.interactions.score DESC")
-	List<Post> findAllByParent(@Param("post") Post post);
+	Page<Post> findAllByParent(@Param("post") Post post);
 
 	@Query("SELECT p FROM Post p WHERE p.greetings = :greetings")
 	Post findByGreetings(@Param("greetings") String greetings);
@@ -51,5 +51,18 @@ public interface PostRepository extends JpaRepository<Post, Long>{
 	List<Post> findTop50ByDateLessThanOrderByCreatedAtDescByUser(@Param("date") LocalDate date, @Param("lastId") long lastPostId, Pageable pageable,
 			@Param("userId") UUID currentUserId);
 
-
+    @Query("SELECT p FROM Post p WHERE p.creatorId = :userId ORDER BY p.date DESC")
+    Page<Post> findLastPostsFromUser(Pageable pageable, @Param("userId") UUID userId);
+    
+    @Query("SELECT p FROM Post p WHERE p.reign = :reign ORDER BY p.date DESC")
+    Page<Post> findLastByReign(Pageable pageable, @Param("reign") String reign);
+    
+    @Query("SELECT p FROM Post p ORDER BY p.date DESC")
+    Page<Post> findLastGlobalPosts(Pageable pageable);
+    
+    @Query("SELECT p FROM Post p WHERE p.creator IN :followed ORDER BY p.date DESC")
+    Page<Post> findAllByFollowedInOrderByDateDesc(@Param("followed") List<User> followed, Pageable pageable);
+    
+    @Query("SELECT p FROM Post p  WHERE p.parent.id = :postId ORDER BY p.date DESC")
+    Page<Post> findAllByParent(@Param("postId") UUID postId, Pageable pageable);
 }
