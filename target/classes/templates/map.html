@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/styles/index.css" rel="stylesheet">
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="#{HOME-TITLE}">Home</title>
+    <link rel="icon" type="image/png" href="assets/favicon.jpg">
+</head>
+
+<header>  
+	<div class="logo">
+  		<h3>⚔️</h3><h1>  MedievalMedia  </h1><h3>🏰</h3>
+  	</div>
+</header>
+<main>
+  <div class="post">
+    <h2 class="center">Enter a reign to see what's happening there</h2>
+    
+    <div class="center">
+     <input type="text"> <button class="sendBtn">🧭 Search</button>
+    </div>
+  </div>
+</main>
+<div class="audio-player"> 
+  <div class=" scrolling-text musicTitle">
+ 	  <span> 🎺 Epic medieval music</span>
+  </div>
+  <div class="playerBtns">
+	  <button>⏮️</button><button>▶️</button><button>⏭️</button>
+	  <div class="volume-container">
+		  <button class="volume">🔊</button>
+		  <input type="range" min="0" max="100" value="50" class="volume-slider">
+	  </div>
+
+  </div>
+</div>
+    
+    <div class="menu">
+     <select>
+        <option default>🛖</option>
+	    <option>📜</option>
+	    <option>🤺</option>
+      </select>
+     
+    </div>
+</main>
+<iframe style="opacity: 0;pointer-events: none;" width="560" height="315"
+  src="https://www.youtube.com/embed/videoseries?list=PLnuhlOfdJ2WKvIu8eaF3uel9p3VjuK10M&autoplay=1&mute=0&controls=0&loop=1"
+  title="YouTube video player" frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+</iframe>
+<script type="module" th:inline="javascript" defer>
+var csrfTokenElement = document.querySelector("meta[name='_csrf']");
+var csrfToken = csrfTokenElement ? csrfTokenElement.getAttribute("content") : null;
+var csrfHeaderElement = document.querySelector("meta[name='_csrf_header']");
+var csrfHeader = csrfHeaderElement ? csrfHeaderElement.getAttribute("content") : null;
+
+
+
+</script>
+</body>
+</html>
+
+

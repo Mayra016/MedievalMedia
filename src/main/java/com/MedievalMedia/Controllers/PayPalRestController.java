@@ -45,12 +45,12 @@ public class PayPalRestController {
 	private Logger log = LoggerFactory.getLogger(PayPalRestController.class);
 	
 	@Autowired
-	public PayPalRestController(UserRepository userRepository) {
+	public PayPalRestController(UserRepository userRepository, PaypalService paypalService, PaymentService paymentService, JwtTokenService jwtService, UserService userService) {
 		this.userRepository = userRepository;
-		this.paypalService = new PaypalService(this.userRepository);
-		this.paymentService = new PaymentService(this.paymentRepository);
-		this.jwtService = new JwtTokenService();
-		this.userService = new UserService(userRepository);
+		this.paypalService = paypalService;
+		this.paymentService = paymentService;
+		this.jwtService = jwtService;
+		this.userService = userService;
 	}
 	
 	
@@ -80,7 +80,7 @@ public class PayPalRestController {
 						
 			Payment payment = this.paypalService.createPayment(request.total(), request.currency(), request.description());
 			
-			if (payment.getState() == "created") {
+			if ("created".equals(payment.getState())) {
 				UUID userId = this.userService.getCurrentUserId(this.jwtService.extractEmail(token));
 				this.paymentService.createInternalPayment(userId.toString(), request.total(), payment.getId());
 				
@@ -93,6 +93,8 @@ public class PayPalRestController {
 				
 				return ResponseEntity.status(HttpStatus.OK).body(approvalUrl);
 			}
+			
+			this.paymentService.createInternalPayment(user.getId().toString(), request.total(), payment.getId(), approvalUrl.split("token=")[1]);
 			
 			return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Payment was not approved. Current status: " + payment.getState());
 			

@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.Page;
+
 
 import com.MedievalMedia.Configurations.CustomUserDetails;
 import com.MedievalMedia.Entities.Post;
@@ -64,7 +67,12 @@ public class PostController {
 	 * @param post The post that will be added
 	 * @param request Access headers to verify jwt token
 	 * @return ResponseEntity with the petition status code
-	 * @throws ResponseStatusException if user not found, post is invalid or post not found
+	 *
+	 * Http response codes:
+	 * 
+	 * 200: if the post was successfuly added to favorites
+	 * 404: if user not found, post is invalid or post not found
+	 * 500: if an unknow error occured
 	 */
 
 	@PutMapping("/add-to-favorite")
@@ -97,7 +105,13 @@ public class PostController {
 	 * @param postId The id of the post to delete
 	 * @param request The HTTP request containing headers to verify the JWT token
 	 * @return ResponseEntity containing a message of the HTTP status code
-	 * @throws ResponseStatusException if post not found or if the email doesn't match the post's creator
+	 *
+	 *
+	 * Http response codes:
+	 * 
+	 * 200: if the post was successfuly deleted to favorites
+	 * 401: if user can't delete this post
+	 * 500: if an unknow error occured
 	 */
 	
 	@DeleteMapping("/delete-post")
@@ -130,7 +144,12 @@ public class PostController {
 	 * @param updateInfo A DAO object containing the post, the new interaction type, and whether it is positive or negative
 	 * @param request The HTTP request containing headers to verify the JWT token
 	 * @return ResponseEntity containing a message of the HTTP status code and the updated post in case of success
-	 * @throws ResponseStatusException if post not found or if the email doesn't match the post's creator
+	 *
+	 * Http response codes:
+	 *
+	 * 200: if the post was successful deleted
+	 * 404: if the post was not found
+	 * 401: if the user has no permition to delete this post
 	 */
 	
 	@PutMapping("/update-post")
@@ -161,11 +180,17 @@ public class PostController {
 	 *
 	 * @param request The HTTP request containing headers to verify the JWT token
 	 * @return ResponseEntity containing a message of the HTTP status code and the followed post in case of success
-	 * @throws ResponseStatusException if post or user not found or user unauthorized
+	 *
+	 * Http response codes:
+	 *
+	 * 200: if followed posts would successful retrieved
+	 * 401: if user is not authenticated
+	 * 404: if any post could be found
+	 * 500: if an unknow server error occurred
 	 */
 	
 	@GetMapping("/get-followed-posts")
-	public ResponseEntity<List<Post>> getFollowPosts(HttpRequest request) {
+	public ResponseEntity<Page<Post>> getFollowPosts(@RequestParam("size") int size, @RequestParam("page") int page, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			if (!this.jwtService.validateToken(token)) {
@@ -173,14 +198,19 @@ public class PostController {
 			}
 			String email = this.jwtService.extractEmail(token);
 			
-			PostsResponse response = this.postService.getFollowedPosts(this.userService.getCurrentUserId(email));
+			Page<Post> response = this.postService.getFollowedPosts(this.userService.getCurrentUserId(email), size, page);
 			
-			return ResponseEntity.status(response.exception().getStatusCode()).body(response.posts());
+			return ResponseEntity.status(HttpStatus.OK).body(response);
+		} catch(ResponseStatusException e) {
+			e.printStackTrace();
+			this.log.error("Unknow error getting posts from followers");
+			
+			return ResponseEntity.status(e.getStatus()).build();
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.log.error("Error getting posts from followers");
 			
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(new Post()));
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
 		}
 	}
 	
@@ -189,13 +219,19 @@ public class PostController {
 	 *
 	 * @param post The post to get the answers
 	 * @return ResponseEntity containing a message of the HTTP status code and its answers in case of success
-	 * @throws ResponseStatusException if answers not found 
+	 *
+	 * Http response codes:
+	 * 
+	 * 200: if the answers could successful retrieved
+	 * 404: if the main post does not exist
+	 * 409: if any answer were found
+	 * 500: if an unknow error occurred 
 	 */
 	
 	@PostMapping("/get-post-answers")
-	public ResponseEntity<List<Post>> getPostAnswers(@RequestBody Post post) {
+	public ResponseEntity<Page<Post>> getPostAnswers(@RequestBody Post post) {
 		try {
-			List<Post> posts = this.postService.getPostsAnswers(post);
+			Page<Post> posts = this.postService.getPostsAnswers(post);
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
 			
 		} catch(ResponseStatusException e) {
@@ -218,7 +254,13 @@ public class PostController {
 	 * @param parentPostId The id of the parent post
 	 * @param request The HTTP request containing headers to verify the JWT token
 	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts
-	 * @throws ResponseStatusException if parent post or creator user were not found
+	 *
+	 * Http response codes:
+	 *
+	 * 200: if the answer was successful added
+	 * 401: if the user is not authenticated
+	 * 404: if the main post and / or the creator was not found
+	 * 500: if an unknow error ocurred
 	 */
 	
 	@PostMapping("/add-answer/${parentPostId}")
@@ -252,11 +294,16 @@ public class PostController {
 	 *
 	 * @param post The last post loaded or a post with the date 11/11/1111 to signalizes that it is the first time to load the page
 	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts
-	 * @throws ResponseStatusException if posts were not found 
+	 *
+	 * Http response codes:
+	 *
+	 * 200: if global posts were successful retrieved
+	 * 400: if global posts could not be retrieved
+	 * 500: if an unknow server error occurred
 	 */
 	
 	@PostMapping("/get-global-posts")
-	public ResponseEntity<List<Post>> getLastPostsGlobaly(Post post, HttpRequest request) {
+	public ResponseEntity<Page<Post>> getLastPostsGlobaly(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 			if (!this.jwtService.validateToken(token)) {
@@ -264,7 +311,7 @@ public class PostController {
 			}
 			String email = this.jwtService.extractEmail(token);
 			
-			List<Post> posts = this.postService.getLastPostsGlobaly(post, this.userService.getCurrentUserId(email));
+			Page<Post> posts = this.postService.getLastPostsGlobaly(post, this.userService.getCurrentUserId(email), size, page);
 			
 			return ResponseEntity.status(HttpStatus.OK).body(posts);
 		} catch(ResponseStatusException e) {
@@ -285,19 +332,24 @@ public class PostController {
 	 *
 	 * @param reign The reign that the letters must be published
 	 * @param request The http request to access jwt token and verify if user is loged in
-	 * @return ResponseEntity containing a message of the HTTP status code and a list with the latest posts that were published in this reign
-	 * @throws ResponseStatusException if posts were not found 
+	 * @return ResponseEntity containing a message of the HTTP status code and a pagination with the latest posts that were published in this reign
+	 *
+	 * Http response codes:
+	 *
+	 * 200: if the last posts could be successfuly retrieved
+	 * 401: if an error retrieving the posts occurred
+	 * 500: if an unknow server error occurred
 	 */
 	
 	@GetMapping("/posts-by-reign")
-	public ResponseEntity<List<Post>> getLastPostsByReign(@RequestParam String reign, HttpRequest request) {
+	public ResponseEntity<Page<Post>> getLastPostsByReign(@RequestParam String reign, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorize").toString().replace("Bearer: ", "");
 			if (!this.jwtService.validateToken(token)) {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(List.of(new Post()));
 			}
 			
-			List<Post> result = this.postService.getLastPostsByReign(reign);
+			Page<Post> result = this.postService.getLastPostsByReign(reign, size, page);
 			
 			return ResponseEntity.status(HttpStatus.OK).body(result);
 		} catch(ResponseStatusException e) {
@@ -320,7 +372,13 @@ public class PostController {
 	 * @param post The post information
 	 * @param request The http request to access jwt token and verify if user is loged in
 	 * @return ResponseEntity containing a message of the HTTP status code
-	 * @throws ResponseStatusException if user were not found 
+     *
+	 * Http response codes:
+	 *
+	 * 200: if the post was successful created
+	 * 401: if the is unauthorized
+	 * 404: if the creator was not found
+	 * 500: if an unknow server error occurred
 	 */
 
 	@PostMapping("/create-post")
@@ -356,12 +414,18 @@ public class PostController {
 	 * @param userId The user id of the request post's creator
 	 * @param lastPostId The id of the last post loaded in case of user had already scrolled all previous loaded posts
 	 * @param request The http request to access jwt token and verify if user is loged in
-	 * @return ResponseEntity containing a message of the HTTP status code and a list with the posts
-	 * @throws ResponseStatusException if posts were not found 
+	 * @return ResponseEntity containing a message of the HTTP status code and a pagination with the posts
+	 *
+	 * Http response codes:
+	 *
+	 * 200: if the posts were successful retrieved
+	 * 401: if the user is unauthenticated
+	 * 404: if posts or user not found
+	 * 500: if an unknow server error occurred
 	 */
 	
 	@GetMapping("/get-user-posts")
-	public ResponseEntity<List<Post>> getPostsData(@RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
+	public ResponseEntity<Page<Post>> getPostsData(@RequestParam(defaultValue = "50") int size, @RequestParam(defaultValue = "0") int page, @RequestBody UUID userId, @RequestBody long lastPostId, HttpRequest request) {
 		try {
 			String token = request.getHeaders().get("Authorization").toString().replace("Bearer: ", "");
 
@@ -371,7 +435,7 @@ public class PostController {
 			
 			String email = this.jwtService.extractEmail(token);
 			
-			List<Post> posts = this.postService.getUserPosts(this.userService.getCurrentUserId(email), lastPostId);
+			Page<Post> posts = this.postService.getUserPosts(this.userService.getCurrentUserId(email), size, page);
 		
 			
 			return ResponseEntity.status(HttpStatus.OK).body(posts);

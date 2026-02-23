@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/styles/index.css" rel="stylesheet">
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="#{DASHBOARD-TITLE}">Dashboard</title>
+    <link rel="icon" type="image/png" href="assets/favicon.jpg">
+</head>
+<body>
+    <main style="display:flex;flex-direction:column;">
+		<div class="info">
+			<input id="postContent" type="text">
+			<select id="postLanguage">
+				<option value='ESPAÑOL'>Español</option>
+				<option value='ENGLISH' default>English</option>
+				<option value='DEUTSCH'>Deutsch</option>
+				<option value='PORTUGUÊS'>Português</option>
+			</select>
+			<button onclick="post()">Send</button>
+		</div>
+		
+    </main>
+<script type="module" th:inline="javascript" defer>
+var csrfTokenElement = document.querySelector("meta[name='_csrf']");
+var csrfToken = csrfTokenElement ? csrfTokenElement.getAttribute("content") : null;
+var csrfHeaderElement = document.querySelector("meta[name='_csrf_header']");
+var csrfHeader = csrfHeaderElement ? csrfHeaderElement.getAttribute("content") : null;
+
+window.post = function() {
+	let post = {
+		greetings : "Hello",
+		content: document.getElementById("postContent"),
+		reign: "Reign from Test",
+		language: document.getElementById("postLanguage")
+	};
+
+    fetch("insert-data", {
+        method: "POST"  ,
+        mode: 'cors',
+		credentials: 'include',
+		headers: {
+			'Content-type': 'application/json',
+			'X-CSRF-TOKEN': csrfToken
+		}, 
+        body: String(id)          
+    })    
+    .then(response => {
+        if (!response.ok) {
+            alert("Error by deleting the order. Please, try again!");
+        } else {
+			cleanOrders();
+			orders = [];
+    		getOrders();
+    		displayOrdersByDate();
+		}
+    })  	
+}
+
+</script>
+</body>
+</html>

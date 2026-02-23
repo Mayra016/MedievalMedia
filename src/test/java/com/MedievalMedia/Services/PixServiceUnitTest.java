@@ -24,34 +24,50 @@ import org.springframework.web.server.ResponseStatusException;
 import com.MedievalMedia.Records.PixDTO;
 import com.MedievalMedia.Records.RecurrencyPix;
 import com.MedievalMedia.Repositories.PaymentRepository;
+import com.MedievalMedia.Repositories.UserRepository;
 
 @DataJpaTest
-@TestPropertySource(properties = {
-	    "PIX_BASE_URL=https://sandbox.devportal.itau.com.br/itau-ep9-api-qrcode-pix-automatico-v1-externo/v1/",
-	    "PIX_CLIENT_ID=id",
-	    "PIX_CLIENT_SECRET=secret",
-	    "PIX_RECEIVER=recei",
-	    "PIX_TOKEN_SANDBOX=token",
-	    "USER_PASSWORD=098"
-	})
+@TestPropertySource(locations = "classpath:application-test.properties")
 class PixServiceUnitTest {
 	@Autowired
     private PaymentRepository repository;
+	@Autowired
+	private UserRepository userRepository;
 
     private PixService service;
     
-    private String pixUrl = "https://sandbox.devportal.itau.com.br/itau-ep9-api-qrcode-pix-automatico-v1-externo/v1/";
-	@Value("${PIX_TOKEN}") private String token;
-	@Value("${PIX_RECEIVER}") private String receiverKey;
-	
-    @Autowired
-    public PixServiceUnitTest() {
-    	this.service = new PixService(this.repository);
-    }
+    private String pixUrl = "https://devportal.itau.com.br/sandboxapi/itau-ep9-api-qrcode-pix-automatico-v1-externo/v1";
+	@Value("${PIX_TOKEN_SANDBOX}") 
+	private String token;
+	@Value("${PIX_RECEIVER}") 
+	private String receiverKey;
+	@Value("${PIX_CLIENT_ID}") 
+	private String itauPixClientId;
+	@Value("${PIX_CLIENT_SECRET}") 
+	private String itauClientSecret;
 	
 	@BeforeEach
-	public void initialize() {
-		this.service = new PixService(this.repository, this.pixUrl, this.token, this.receiverKey);
+	public void initialize() throws InterruptedException {
+		this.service = new PixService(this.repository, this.pixUrl, this.token, this.receiverKey, this.itauPixClientId, this.itauClientSecret);
+	}
+	
+	@Test
+	void authenticateOK() throws URISyntaxException, IOException, InterruptedException {
+		String token = this.service.authenticate();
+		
+		assertNotNull(token);
+		assertTrue(token!="");
+	}
+	
+	@Test
+	void createQRCodeSimpleOK() throws ResponseStatusException, URISyntaxException, IOException, InterruptedException {
+		PixDTO pix = new PixDTO(Map.of("subtipo", "IMEDIATO"), Map.of("original", "1"), "", Map.of("nome", "Username", "cnpj", ""), new RecurrencyPix(Map.of("contrato", "", "objeto", "Donation at Medieval Media"), Map.of("dataInicial", LocalDateTime.now().toString(), "dataFinal", LocalDateTime.now().toString()), "NAO_PERMITE"));
+		
+		String link = this.service.createQRCodeSimple(pix, "payer", "finalUser", "coin");
+		System.out.println("####TEST######" + link);
+		Thread.sleep(2000);
+		assertNotNull(link);
+		assertTrue(!link.equals(""));
 	}
 	
 	@Test

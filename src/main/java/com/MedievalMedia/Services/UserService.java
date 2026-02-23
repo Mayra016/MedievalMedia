@@ -94,6 +94,14 @@ public class UserService implements UserDetailsService {
 		return Language.ENGLISH;
 	}
 	
+	/**
+	* Verify if user is authenticated and revalidate token
+	*
+	* @param token 
+	* @return String jwtToken
+	*
+	* @throws ResponseStatusException if this user was not found
+	**/
 	public String isUserAuthenticated(String token) {
 		
 		String email = this.jwtTokenService.extractEmail(token);
@@ -111,57 +119,60 @@ public class UserService implements UserDetailsService {
 			if (this.jwtTokenService.isTokenAboutToExpire(token)) {
 				token = JwtTokenService.generateToken(email);
 			}
+		} else {
+		    Optional<User> searchUser = this.userRepository.findByEmail(email);
+		    
+		    if (searchUser.isEmpty()) {
+		        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+		    }
 		}
+		
 		
 		return token;
 	}
 	
-	public ResponseEntity<String> authenticateUser(UserDAO credentials) {
-		try {
-			Optional<User> searchUser = this.userRepository.findByEmail(credentials.email());
+	/**
+	* User authentication
+	*
+	* @param credentials An UserDAO object containing the user credentials
+	* @throws ResponseStatusException If wrong credentials or user not found
+	* 
+	**/
+	public void authenticateUser(UserDAO credentials) {
+		Optional<User> searchUser = this.userRepository.findByEmail(credentials.email());
 			
-			if (searchUser.isPresent()) {
-				User user = searchUser.get();
-				if (passwordEncoder.matches(credentials.password(), user.getPassword())) {
-					String token = JwtTokenService.generateToken(credentials.email());
-					return ResponseEntity.status(HttpStatus.OK).body(token);
-				} else {
-					return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Wrong credentials");
-				}
+		if (searchUser.isPresent()) {
+			User user = searchUser.get();
+			if (passwordEncoder.matches(credentials.password(), user.getPassword())) {
+				String token = JwtTokenService.generateToken(credentials.email());
+				throw new ResponseStatusException(HttpStatus.OK, token);
 			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Wrong credentials");
 			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			this.log.error("Unknow error authenticating login");
-			
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unknow error authenticating login");
-			
+		} else {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
 		}
 	}
 
-	public ResponseEntity<String> changeCredentials(String email) {
-		try {
-			Optional<User> searchUser = this.userRepository.findByEmail(email);
+    /**
+    * Change credentials
+    *
+    * @param email The email to send the link to change the password
+    * @throws ResponseStatusException NOT_FOUND if the email was not found
+    **/
+	public void changeCredentials(String email) {
+		Optional<User> searchUser = this.userRepository.findByEmail(email);
 
-			if (searchUser.isPresent()) {
-				User user = searchUser.get();
+		if (searchUser.isPresent()) {
+			User user = searchUser.get();
 				
-				String token = JwtTokenService.generateToken(email);
-				this.emailService.sendChangeCredentials(email, token, user.getAppLanguage());
-				
-				return ResponseEntity.status(HttpStatus.OK).body("Change password email successfuly sended");
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-			}
-			
-		} catch(Exception e) {
-			e.printStackTrace();
-			this.log.error("Error changing credentials");
-			
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sending email to change password");
+			String token = JwtTokenService.generateToken(email);
+			this.emailService.sendChangeCredentials(email, token, user.getAppLanguage());
+
+		} else {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Email not found");
 		}
+
 	}
 
 	/**
@@ -174,7 +185,7 @@ public class UserService implements UserDetailsService {
 	 */
 	public UserProfileInfoDAO getUserInfo(UUID userId) {
 		User user = this.userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-		UserProfileInfoDAO userInfo = new UserProfileInfoDAO(user.getId(), user.getUsername(), user.getTitles(), user.getReign(), user.getAppLanguage(), user.getBirthday());
+		UserProfileInfoDAO userInfo = new UserProfileInfoDAO(user.getId(), user.getUsername(), user.getTitles(), user.getReign, user.getAppLanguage(), user.getBirthday());
 		return userInfo;
 	}
 }
